@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "project": {
+    "name": "ShaadiOS",
+    "productType": "Wedding planning coordination workspace",
+    "stack": ["React", "Vite"]
+  },
+  "sources": {
+    "tokens": [],
+    "components": [],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "primary": "#A7465C",
+      "accent": "#A67B42",
+      "background": "#FCF9F7",
+      "surface": "#FFFFFF"
+    },
+    "typography": {
+      "display": "Playfair Display",
+      "body": "DM Sans"
+    },
+    "spacing": { "base": "4px" },
+    "radius": { "card": "18px" },
+    "shadows": { "card": "soft neutral" },
+    "motion": { "level": "subtle", "reducedMotion": "supported" },
+    "density": "standard dashboard"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    "Use a calm, warm coordination workspace instead of a bridal marketplace aesthetic.",
+    "Make dependency context and user control visible in every high-impact workflow.",
+    "Use rose as the primary action and gold or sage for non-critical contextual states."
+  ],
+  "evidence": [],
+  "generatedAt": "2026-09-15T16:42:38.349Z"
+}
