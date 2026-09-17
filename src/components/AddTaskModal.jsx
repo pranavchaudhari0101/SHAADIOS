@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
+import { formatIndianDate, shiftDate, todayIso } from '../core/utils.js'
 import { Plus, X } from 'lucide-react'
 
 export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('Venue')
   const [ceremony, setCeremony] = useState('Wedding')
-  const [owner, setOwner] = useState(people[0]?.name?.split(' ')[0] || 'Rhea')
-  const [due, setDue] = useState('Next week')
+  const [owner, setOwner] = useState(people[0]?.id || '')
+  const [due, setDue] = useState(shiftDate(todayIso(), 7))
   const [reason, setReason] = useState('')
   const [dependsOnId, setDependsOnId] = useState('')
 
@@ -29,14 +30,16 @@ export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
     e.preventDefault()
     if (!title.trim()) return
 
-    const selectedPerson = people.find((p) => p.name.startsWith(owner)) || people[0]
+    const selectedPerson = people.find((p) => p.id === owner) || people[0]
     const newTask = {
       id: `task-${Date.now()}`,
       title: title.trim(),
-      owner,
+      owner: selectedPerson?.name || 'You',
+      ownerId: selectedPerson?.id,
       ownerRole: selectedPerson?.roleKey || 'owner',
       initials: selectedPerson?.initials || owner[0],
-      due: due.trim() || 'Upcoming',
+      due: formatIndianDate(due),
+      dueIsoDate: due,
       status: dependsOnId ? 'Blocked' : 'Not started',
       priority: dependsOnId ? 'Blocked' : 'Upcoming',
       type: category.toLowerCase().slice(0, 5),
@@ -71,7 +74,7 @@ export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
               <label>
                 <span>Task Title *</span>
                 <input
-                  type="text"
+                  type="text" maxLength={180}
                   required
                   placeholder="e.g. Schedule Sangeet sound-check rehearsal"
                   value={title}
@@ -110,7 +113,7 @@ export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
                     {people.map((p) => {
                       const firstName = p.name.split(' ')[0]
                       return (
-                        <option key={p.id} value={firstName}>
+                        <option key={p.id} value={p.id}>
                           {p.name} ({p.role})
                         </option>
                       )
@@ -119,10 +122,9 @@ export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
                 </label>
 
                 <label>
-                  <span>Due Window / Deadline</span>
+                  <span>Due date *</span>
                   <input
-                    type="text"
-                    placeholder="e.g. Next week or 15 Oct"
+                    type="date" required max="2100-12-31"
                     value={due}
                     onChange={(e) => setDue(e.target.value)}
                   />
@@ -133,6 +135,7 @@ export function AddTaskModal({ people = [], allTasks = [], onClose, onAdd }) {
                 <span>Why this matters (Context for owner)</span>
                 <input
                   type="text"
+                  maxLength={500}
                   placeholder="e.g. Ensures DJ has technical rider 2 weeks prior"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
