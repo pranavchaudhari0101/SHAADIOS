@@ -31,7 +31,7 @@ export function PeopleView({
           </p>
         </div>
         <button className="primary-button compact" onClick={onOpenInvite}>
-          <Plus size={17} /> Invite collaborator
+          <Plus size={17} /> Add person
         </button>
       </div>
 
@@ -39,10 +39,10 @@ export function PeopleView({
       <section className="role-perspective-bar">
         <div className="perspective-label">
           <Eye size={17} />
-          <span>Simulate view as:</span>
+          <span>Role preview:</span>
         </div>
         <div className="perspective-chips">
-          {people.map((p) => (
+          {people.filter((p, index) => people.findIndex(other => other.roleKey === p.roleKey) === index).map((p) => (
             <button
               key={p.id}
               className={`perspective-chip ${activeRole === p.roleKey ? 'active' : ''}`}
@@ -60,14 +60,14 @@ export function PeopleView({
         <div>
           <UsersRound size={21} />
           <div>
-            <h2>One shared plan. Role-based views.</h2>
+            <h2>One shared plan. Clear responsibilities.</h2>
             <p>
-              Private financial details stay with the couple. Family leads see tasks assigned to them; coordinators see vendor run-sheets.
+              Role previews organize work; they are not access controls. All data is local to this browser, with no remote collaboration or private accounts.
             </p>
           </div>
         </div>
         <span className="trust-badge">
-          <ShieldCheck size={16} /> Privacy-First Architecture
+          <ShieldCheck size={16} /> Local planning workspace
         </span>
       </section>
 
@@ -76,7 +76,7 @@ export function PeopleView({
         {people.map((person) => {
           const personFirstName = person.name.split(' ')[0]
           const assignedTasks = tasks.filter(
-            (t) => t.owner.includes(personFirstName) || (person.roleKey === 'owner' && t.owner === 'Both of you')
+            (t) => t.ownerId ? t.ownerId === person.id : t.owner.includes(personFirstName) || (person.roleKey === 'family_lead' && t.owner === 'Mom') || (['owner', 'co_owner'].includes(person.roleKey) && t.owner === 'Both of you')
           )
           const waitingCount = assignedTasks.filter((t) => t.status === 'Waiting').length
 
@@ -97,13 +97,13 @@ export function PeopleView({
 
               <div className="person-card-actions">
                 <button
-                  className="link-button"
+                  className="link-button" disabled={!assignedTasks.length}
                   onClick={() => {
                     const firstTask = assignedTasks[0]
                     if (firstTask) onTask(firstTask)
                   }}
                 >
-                  {person.roleKey === 'family_lead' ? 'View Mom’s work' : 'View tasks'} <ArrowRight size={15} />
+                  {assignedTasks.length ? 'View assigned task' : 'No tasks assigned'} <ArrowRight size={15} />
                 </button>
               </div>
             </article>
@@ -118,9 +118,9 @@ export function PeopleView({
             <span><HeartHandshake size={20} /></span>
             <div>
               <p className="section-label">FAMILY DELEGATION PIPELINE</p>
-              <h2>Mom is currently coordinating hotel accommodation.</h2>
+              <h2>{momTask.owner} is coordinating accommodation.</h2>
               <p>
-                She holds the room block specifications, deadline ({momTask.due}), and vendor context. The couple is only looped in if the quote exceeds parameters.
+                Keep the room block specifications, deadline ({momTask.due}), and vendor context together in one task.
               </p>
             </div>
           </div>
@@ -128,7 +128,7 @@ export function PeopleView({
             className="secondary-button pale"
             onClick={() => onTask(momTask)}
           >
-            Inspect Mom's task
+            View accommodation task
           </button>
         </section>
       )}
