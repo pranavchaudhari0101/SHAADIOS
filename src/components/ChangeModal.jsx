@@ -9,6 +9,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
+import { todayIso } from '../core/utils.js'
 import { simulateDateChange } from '../core/changeEngine.js'
 import { CameraIcon, VenueIcon, FoodIcon } from './Icons.jsx'
 
@@ -76,12 +77,13 @@ export function ChangeModal({
               <label>
                 <span>NEW TARGET DATE</span>
                 <input
-                  type="date"
+                  type="date" min={todayIso()} max="2100-12-31" required
                   value={proposal}
                   onChange={(event) => setProposal(event.target.value)}
                 />
               </label>
             </div>
+            {simulation.error && <p className="field-error" role="status">{simulation.error}</p>}
             <div className="modal-note">
               <ShieldCheck size={18} />
               <p>
@@ -108,7 +110,7 @@ export function ChangeModal({
 
             <div className="affected-people-pill">
               <UsersRound size={14} />
-              <span>Targeted notification audience: <strong>{simulation.affectedCollaborators.join(', ')}</strong></span>
+              <span>Affected owners: <strong>{simulation.affectedCollaborators.join(', ')}</strong></span>
             </div>
 
             <ol className="impact-list">
@@ -128,7 +130,7 @@ export function ChangeModal({
               ))}
             </ol>
             <p className="modal-footnote">
-              <LockKeyhole size={14} /> Internal timelines recalculate automatically. External vendor messages are drafted for your manual review.
+              <LockKeyhole size={14} /> Internal timelines recalculate automatically. Contact vendors yourself; no messages or reservation changes are sent.
             </p>
           </div>
         )}
@@ -137,15 +139,15 @@ export function ChangeModal({
           <div className="success-state">
             <span><CheckCircle2 size={42} /></span>
             <p className="eyebrow">PLAN RECALCULATED</p>
-            <h2>Your wedding is now set for {simulation.formattedNew}.</h2>
+            <h2 id="change-title">Your plan now uses {wedding.date}.</h2>
             <p>
-              Timeline anchors updated, task due dates re-aligned, and selective notifications delivered.
+              Internal task dates are updated. Review the new availability tasks before relying on vendor bookings.
             </p>
             <div className="success-list">
-              <span><Check size={16} /> Venue availability re-check marked as top critical action</span>
-              <span><Check size={16} /> Photographer date hold inquiry drafted for Arjun</span>
-              <span><Check size={16} /> Mom notified of revised hotel block check-in dates</span>
-              <span><Check size={16} /> Invitation printing target recalculated</span>
+              <span><Check size={16} /> Open task deadlines shifted; completed work preserved</span>
+              <span><Check size={16} /> Vendor availability review tasks added</span>
+              <span><Check size={16} /> Update recorded in the local notification center</span>
+              <span><Check size={16} /> External holds and contracts left unchanged</span>
             </div>
             <button className="primary-button full" onClick={onClose}>
               See updated plan <ArrowRight size={17} />
@@ -162,6 +164,7 @@ export function ChangeModal({
             )}
             <button
               className="primary-button"
+              disabled={Boolean(simulation.error)}
               onClick={() => (step === 'edit' ? setStep('impact') : onApply())}
             >
               {step === 'edit' ? 'Preview impact' : 'Approve and update plan'} <ArrowRight size={17} />
