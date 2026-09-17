@@ -9,17 +9,22 @@ import {
 } from 'lucide-react'
 
 export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
-  const defaultMessage = `Hi ${vendor?.contactPerson || vendor?.name || 'there'},\n\nHope you are having a wonderful week! We are finalizing the key contracts for our wedding on ${wedding.date} in ${wedding.city}.\n\nCould you please share the finalized agreement / revised quotation by this Friday? We would love to lock this in and confirm our dates.\n\nWarm regards,\n${wedding.couple}`
+  const defaultMessage = `Hi ${vendor?.contactPerson || vendor?.name || 'there'},\n\nHope you are having a wonderful week! We are finalizing the key contracts for our wedding on ${wedding.date} in ${wedding.city}.\n\nCould you please share the finalized agreement / revised quotation ${vendor.holdDeadline ? `before the hold deadline of ${vendor.holdDeadline}` : 'when available'}? We would love to lock this in and confirm our dates.\n\nWarm regards,\n${wedding.couple}`
 
-  const [message, setMessage] = useState(defaultMessage)
+  const [message, setMessage] = useState(vendor.followUpDraft || defaultMessage)
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState('')
 
   if (!vendor) return null
 
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(message)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopied(true)
+      setCopyError('')
+    } catch {
+      setCopyError('Clipboard access unavailable. Select and copy the text manually.')
+    }
   }
 
   const handleSend = (channel = 'whatsapp') => {
@@ -51,23 +56,26 @@ export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
             <textarea
               className="composer-textarea"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              maxLength={4000}
+              onChange={(e) => { setMessage(e.target.value); setCopied(false) }}
               rows={8}
             />
           </label>
 
           <div className="composer-vendor-meta">
-            <span>Recipient: <strong>{vendor.contactPerson || vendor.name}</strong> ({vendor.phone || 'Phone on file'})</span>
+            <span>Draft only. Nothing is sent automatically.</span>
+            <span>Recipient: <strong>{vendor.contactPerson || vendor.name}</strong> ({vendor.phone || 'No phone recorded'})</span>
             <span>Category: <strong>{vendor.category}</strong></span>
           </div>
+          {copyError && <p className="field-error" role="alert">{copyError}</p>}
         </div>
 
         <footer className="modal-actions">
-          <button className="secondary-button" onClick={handleCopy}>
+          <button className="secondary-button" disabled={!message.trim()} onClick={handleCopy}>
             {copied ? <><Check size={16} /> Copied to clipboard</> : <><Copy size={16} /> Copy text</>}
           </button>
-          <button className="primary-button" onClick={() => handleSend('whatsapp')}>
-            <MessageCircle size={16} /> Send via WhatsApp <ExternalLink size={14} />
+          <button className="primary-button" disabled={!message.trim()} onClick={() => handleSend('draft')}>
+            <MessageCircle size={16} /> Save draft
           </button>
         </footer>
       </section>
