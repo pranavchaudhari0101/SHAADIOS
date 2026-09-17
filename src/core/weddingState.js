@@ -1,3 +1,6 @@
+import { daysBetween, formatIndianDate, isValidDate, shiftDate, todayIso } from './utils.js'
+import { synchronizeDependencies } from './dependencyEngine.js'
+
 // ShaadiOS Wedding State Engine
 // Manages the connected wedding state model, initial seed data, and local persistence.
 
@@ -240,7 +243,7 @@ export const DEFAULT_VENDORS = [
     id: 'v-roseate',
     name: 'The Roseate',
     category: 'Venue',
-    state: 'Contract pending', // 'Discovered' | 'Shortlisted' | 'Contacted' | 'Quote received' | 'Selected' | 'Confirmed'
+    state: 'Selected', // 'Discovered' | 'Shortlisted' | 'Contacted' | 'Quote received' | 'Selected' | 'Confirmed'
     owner: 'Rhea',
     action: 'Confirm contract',
     amount: '₹5,40,000',
@@ -377,9 +380,7 @@ export function loadSavedState() {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      if (parsed && parsed.wedding && parsed.tasks && parsed.vendors) {
-        return parsed
-      }
+      if (isValidSavedState(parsed)) return parsed
     }
   } catch (e) {
     console.warn('Could not read saved wedding state, using defaults:', e)
@@ -398,8 +399,9 @@ export function loadSavedState() {
 export function saveState(state) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    return true
   } catch (e) {
-    console.error('Failed to persist wedding state:', e)
+    return false
   }
 }
 
@@ -425,5 +427,65 @@ export function resetState() {
       ...DEFAULT_ACTIVITY,
     ],
     activeRole: 'owner',
+  }
+}
+
+// Local storage is untrusted input. Reject malformed snapshots rather than crashing the UI.
+export function isValidSavedState(state) {
+  const text = v => typeof v === 'string' && v.length <= 10000
+  const fields = (item, keys) => item && keys.every(k => text(item[k]))
+  const list = (value, predicate) => Array.isArray(value) && value.length <= 2000 && value.every(predicate)
+  if (!state || !fields(state.wedding, ['couple', 'city', 'isoDate', 'date', 'guests', 'budget']) || !state.wedding.couple.trim() || !isValidDate(state.wedding.isoDate)) return false
+  if (!list(state.wedding.ceremonies, text)) return false
+  if (!list(state.tasks, t => fields(t, ['id', 'title', 'owner', 'ownerRole', 'status', 'category', 'ceremony', 'reason']) &&
+    ['Not started', 'In progress', 'Waiting', 'Blocked', 'Done'].includes(t.status) &&
+    list(t.dependsOn, text) && list(t.notes, text) && (!t.dueIsoDate || isValidDate(t.dueIsoDate)))) return false
+  if (!list(state.vendors, v => fields(v, ['id', 'name', 'state', 'owner', 'category', 'action', 'amount']) && (!v.holdDeadline || isValidDate(v.holdDeadline)))) return false
+  if (!list(state.people, p => fields(p, ['id', 'name', 'role', 'roleKey', 'initials'])) || !state.people.length) return false
+  if (!list(state.notifications, n => fields(n, ['id', 'title', 'description', 'type', 'timestamp']))) return false
+  if (!list(state.activityLog, a => fields(a, ['id', 'text', 'time', 'author']))) return false
+  const ids = new Set(state.tasks.map(t => t.id))
+  if (ids.size !== state.tasks.length || state.tasks.some(t => t.dependsOn.some(id => id === t.id || !ids.has(id)))) return false
+  // Bound traversal and reject cycles, including cycles imported through devtools.
+  const done = new Set(), visiting = new Set(), map = new Map(state.tasks.map(t => [t.id, t]))
+  const visit = id => {
+    if (visiting.has(id)) return false
+    if (done.has(id)) return true
+    visiting.add(id)
+    if (!map.get(id).dependsOn.every(visit)) return false
+    visiting.delete(id); done.add(id); return true
+  }
+  return state.tasks.every(t => visit(t.id))
+}
+
+export function createWeddingState(setup) {
+  if (!isValidDate(setup.date) || setup.date < todayIso() || setup.date > '2100-12-31' || !setup.city.trim() || !setup.couple.trim() || !setup.ceremonies.length) {
+    throw new Error('Add your names, city, a future date and at least one ceremony.')
+  }
+  const fresh = resetState()
+  const names = setup.couple.split(/\s*(?:&|\band\b)\s*/i).filter(Boolean)
+  const people = fresh.people.slice(0, 2).map((p, i) => ({ ...p, name: names[i] || 'Partner', initials: (names[i] || 'P')[0].toUpperCase(), email: '', phone: '' }))
+  const bookedIds = { Venue: 'venue', Photography: 'photographer', Catering: 'tasting', Decor: 'decor', Makeup: 'makeup' }
+  const tasks = DEFAULT_TASKS.filter(t => t.ceremony === 'All ceremonies' || setup.ceremonies.includes(t.ceremony)).map(t => {
+    const person = people[t.ownerRole === 'co_owner' ? 1 : 0]
+    const dueIsoDate = shiftDate(setup.date, daysBetween(DEFAULT_WEDDING.isoDate, t.dueIsoDate))
+    return { ...t, owner: person.name, ownerId: person.id, ownerRole: person.roleKey, initials: person.initials,
+      title: t.title.replace(' with The Roseate', '').replace(' from Lenscraft Studios', ''),
+      dueIsoDate, due: formatIndianDate(dueIsoDate), notes: [], reason: `Coordinate ${t.category.toLowerCase()} for your celebration in ${setup.city.trim()}.`,
+      status: (setup.booked || []).some(b => bookedIds[b] === t.id) ? 'Done' : 'Not started' }
+  })
+  tasks.push({ id: 'makeup', title: 'Confirm bridal hair & makeup artist', category: 'Artists', ceremony: setup.ceremonies[0], type: 'artist',
+    owner: people[0].name, ownerId: people[0].id, ownerRole: 'owner', initials: people[0].initials,
+    dueIsoDate: shiftDate(setup.date, -90), due: formatIndianDate(shiftDate(setup.date, -90)),
+    status: (setup.booked || []).includes('Makeup') ? 'Done' : 'Not started', priority: 'Upcoming',
+    reason: 'Arrange a trial and confirm your artist.', dependsOn: [], blocks: [], notes: [] })
+  const ids = new Set(tasks.map(t => t.id))
+  tasks.forEach(t => { t.dependsOn = t.dependsOn.filter(id => ids.has(id)); t.blocks = tasks.filter(x => x.dependsOn.includes(t.id)).map(x => x.id) })
+  return {
+    ...fresh, people, vendors: [], notifications: [], activityLog: [], hasStarted: true,
+    wedding: { ...DEFAULT_WEDDING, couple: setup.couple.trim(), partner1: people[0].name, partner2: people[1].name,
+      city: setup.city.trim(), isoDate: setup.date, date: formatIndianDate(setup.date), days: daysBetween(todayIso(), setup.date),
+      guests: `${setup.guests} guests`, budget: `${setup.budget} budget`, ceremonies: [...setup.ceremonies] },
+    tasks: synchronizeDependencies(tasks),
   }
 }
