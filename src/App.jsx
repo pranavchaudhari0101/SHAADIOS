@@ -262,8 +262,9 @@ export default function App() {
   }
 
   const handleSendFollowUp = (vendor, channel, message) => {
+    setVendors(prev => prev.map(v => v.id === vendor.id ? { ...v, followUpDraft: message } : v))
     setFollowUpVendor(null)
-    notify(`Message prepared for ${vendor.name} via ${channel}. Draft logged.`)
+    notify(`Draft saved for ${vendor.name}. Copy it to send from your preferred app.`)
     setActivityLog((prev) => [
       {
         id: `act-${Date.now()}`,
