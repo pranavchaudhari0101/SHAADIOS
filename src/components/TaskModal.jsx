@@ -42,9 +42,7 @@ export function TaskModal({
   ).filter(Boolean)
 
   // Look up downstream blocked tasks
-  const downstreamTasks = (task.blocks || []).map((id) =>
-    allTasks.find((t) => t.id === id)
-  ).filter(Boolean)
+  const downstreamTasks = allTasks.filter(t => t.dependsOn?.includes(task.id))
 
   const handleAddNote = () => {
     if (!newNote.trim()) return
@@ -213,6 +211,7 @@ export function TaskModal({
             {showNoteInput && (
               <div className="add-note-box">
                 <textarea
+                  aria-label="Task note" maxLength={2000}
                   placeholder="Record vendor quotes, meeting updates, or requirements..."
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
@@ -222,7 +221,7 @@ export function TaskModal({
                   <button className="secondary-button compact" onClick={() => setShowNoteInput(false)}>
                     Cancel
                   </button>
-                  <button className="primary-button compact" onClick={handleAddNote}>
+                  <button className="primary-button compact" disabled={!newNote.trim()} onClick={handleAddNote}>
                     <Send size={14} /> Save note
                   </button>
                 </div>
@@ -249,6 +248,7 @@ export function TaskModal({
               {task.status !== 'In progress' && (
                 <button
                   className="secondary-button"
+                  disabled={isBlocked}
                   onClick={() => onStatusChange(task.id, 'In progress')}
                 >
                   In progress
@@ -257,6 +257,7 @@ export function TaskModal({
               {task.status !== 'Waiting' && (
                 <button
                   className="secondary-button"
+                  disabled={isBlocked}
                   onClick={() => onStatusChange(task.id, 'Waiting')}
                 >
                   Mark waiting
@@ -264,6 +265,7 @@ export function TaskModal({
               )}
               <button
                 className="primary-button"
+                disabled={isBlocked}
                 onClick={() => onComplete(task)}
               >
                 <Check size={17} /> Mark complete
@@ -272,7 +274,8 @@ export function TaskModal({
           ) : (
             <button
               className="secondary-button full"
-              onClick={() => onStatusChange(task.id, 'In progress')}
+              disabled={isBlocked}
+                  onClick={() => onStatusChange(task.id, 'In progress')}
             >
               Reopen task
             </button>
