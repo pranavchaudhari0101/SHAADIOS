@@ -10,28 +10,33 @@ export function InviteModal({ onClose, onInvite }) {
   const [name, setName] = useState('')
   const [emailOrPhone, setEmailOrPhone] = useState('')
   const [roleKey, setRoleKey] = useState('family_lead')
+  const [error, setError] = useState('')
 
   const roles = [
     {
       key: 'co_owner',
       label: 'Co-Owner (Partner)',
-      desc: 'Full access to all budget, vendor contracts, and planning decisions.',
+      desc: 'Your partner in planning decisions and shared responsibilities.',
     },
     {
       key: 'family_lead',
       label: 'Family Lead',
-      desc: 'Sees tasks assigned to family (e.g. accommodations, guest coordination). Financial details stay private.',
+      desc: 'Help with family tasks, accommodation and guest coordination.',
     },
     {
       key: 'coordinator',
       label: 'Wedding Coordinator',
-      desc: 'Operational access to timelines, run-of-show, and vendor contact sheets.',
+      desc: 'Help organize timelines, ceremonies and vendor follow-ups.',
     },
   ]
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!name.trim()) return
+    const contact = emailOrPhone.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) && !/^\+?[\d\s()-]{8,20}$/.test(contact)) {
+      setError('Enter a valid email address or phone number.'); return
+    }
 
     const roleObj = roles.find((r) => r.key === roleKey)
     const initials = name
@@ -48,10 +53,10 @@ export function InviteModal({ onClose, onInvite }) {
       role: roleObj?.label || 'Collaborator',
       roleKey,
       initials,
-      email: emailOrPhone.includes('@') ? emailOrPhone : '',
-      phone: !emailOrPhone.includes('@') ? emailOrPhone : '',
+      email: contact.includes('@') ? contact.toLowerCase() : '',
+      phone: !contact.includes('@') ? contact.toLowerCase() : '',
       tint: roleKey === 'co_owner' ? 'sage' : roleKey === 'family_lead' ? 'soft' : 'lilac',
-      note: 'Invited collaborator · Ready to collaborate',
+      note: 'Local planning contact · No invitation sent',
     }
 
     onInvite(newPerson)
@@ -64,7 +69,7 @@ export function InviteModal({ onClose, onInvite }) {
         <header>
           <div>
             <p className="eyebrow">TEAM & COLLABORATION</p>
-            <h2 id="invite-title">Invite a Wedding Collaborator</h2>
+            <h2 id="invite-title">Add someone to your team</h2>
           </div>
           <button className="icon-button" onClick={onClose} aria-label="Close invite modal">
             <X size={20} />
@@ -74,14 +79,14 @@ export function InviteModal({ onClose, onInvite }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <p className="modal-lead">
-              ShaadiOS gives each collaborator the exact clarity they need without exposing private couple discussions.
+              Keep responsibilities clear by adding a planning contact. This saves a contact on this browser; it does not send an invitation or create an account.
             </p>
 
             <div className="form-fields">
               <label>
                 <span>Full Name *</span>
                 <input
-                  type="text"
+                  type="text" maxLength={120}
                   required
                   placeholder="e.g. Meera Kapoor or Vikram Shah"
                   value={name}
@@ -92,7 +97,7 @@ export function InviteModal({ onClose, onInvite }) {
               <label>
                 <span>Email or WhatsApp Number *</span>
                 <input
-                  type="text"
+                  type="text" maxLength={120}
                   required
                   placeholder="e.g. meera@gmail.com or +91 98200 12345"
                   value={emailOrPhone}
@@ -101,7 +106,7 @@ export function InviteModal({ onClose, onInvite }) {
               </label>
 
               <fieldset className="role-selector-fieldset">
-                <legend>Select Role & Access Level</legend>
+                <legend>Planning role (not an access permission)</legend>
                 <div className="role-options-list">
                   {roles.map((r) => (
                     <label
@@ -128,17 +133,18 @@ export function InviteModal({ onClose, onInvite }) {
             <div className="modal-note">
               <ShieldCheck size={18} />
               <p>
-                <strong>Privacy Guaranteed:</strong> Family members only see work assigned to them.
+                <strong>Local prototype:</strong> Everyone using this browser can see all saved data. Do not enter confidential information.
               </p>
             </div>
           </div>
 
+          {error && <p className="field-error form-error" role="alert">{error}</p>}
           <footer className="modal-actions">
             <button type="button" className="secondary-button" onClick={onClose}>
               Cancel
             </button>
             <button type="submit" className="primary-button" disabled={!name.trim()}>
-              <Send size={16} /> Send invitation
+              <Send size={16} /> Add planning contact
             </button>
           </footer>
         </form>
