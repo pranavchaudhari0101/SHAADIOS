@@ -62,12 +62,12 @@ export function VendorsView({
       state: 'Shortlisted',
       owner: newVendor.owner,
       action: 'Request pricing',
-      amount: newVendor.amount ? `₹${newVendor.amount}` : '—',
-      amountNumber: parseInt(newVendor.amount.replace(/[^0-9]/g, ''), 10) || 0,
+      amount: newVendor.amount ? formatCurrency(Number(newVendor.amount)) : '—',
+      amountNumber: Number(newVendor.amount) || 0,
       color: newVendor.category === 'Venue' ? 'rose' : newVendor.category === 'Photography' ? 'blue' : 'orange',
-      holdDeadline: '2026-10-15',
-      contactPerson: 'Lead Contact',
-      phone: '+91 98000 00000',
+      holdDeadline: '',
+      contactPerson: '',
+      phone: '',
       notes: 'Added via vendor directory.',
     }
 
@@ -104,12 +104,12 @@ export function VendorsView({
 
       {/* Add Vendor Form Modal/Section */}
       {showAddVendor && (
-        <div className="modal-layer" role="dialog" aria-modal="true">
-          <button className="modal-backdrop" onClick={() => setShowAddVendor(false)} />
+        <div className="modal-layer" role="dialog" aria-modal="true" aria-labelledby="vendor-title">
+          <button className="modal-backdrop" aria-label="Close add vendor" onClick={() => setShowAddVendor(false)} />
           <section className="change-modal">
             <header>
-              <h2>Add Vendor to Pipeline</h2>
-              <button className="icon-button" onClick={() => setShowAddVendor(false)}>✕</button>
+              <h2 id="vendor-title">Add vendor to your plan</h2>
+              <button className="icon-button" aria-label="Close add vendor" onClick={() => setShowAddVendor(false)}>✕</button>
             </header>
             <form onSubmit={handleCreateVendor}>
               <div className="modal-body">
@@ -117,7 +117,7 @@ export function VendorsView({
                   <label>
                     <span>Vendor Business Name *</span>
                     <input
-                      type="text"
+                      type="text" maxLength={120}
                       required
                       placeholder="e.g. Royal Rajasthani Shehnai Troupe"
                       value={newVendor.name}
@@ -142,7 +142,7 @@ export function VendorsView({
                   <label>
                     <span>Estimated Quote (₹)</span>
                     <input
-                      type="text"
+                      type="number" min="0" max="1000000000" step="1"
                       placeholder="e.g. 150000"
                       value={newVendor.amount}
                       onChange={(e) => setNewVendor({ ...newVendor, amount: e.target.value })}
@@ -163,6 +163,7 @@ export function VendorsView({
         </div>
       )}
 
+      {!vendors.length && <div className="empty-filter-state"><h2>Your dream team starts here.</h2><p>Add your first vendor to track quotes and next steps. No sample vendors are added to your personal plan.</p></div>}
       {/* Vendor Cards Grid */}
       <div className="vendor-grid">
         {vendors.map((vendor) => {
@@ -222,7 +223,7 @@ export function VendorsView({
                     )}
                     <p>
                       <small>ACTION</small>
-                      <strong>{vendor.action}</strong>
+                      <strong>{isConfirmed ? 'Booking recorded' : vendor.action}</strong>
                     </p>
                   </span>
                   {linkedTask && (
@@ -255,12 +256,13 @@ export function VendorsView({
             <p className="section-label">CONTEXT-AWARE COMMUNICATION</p>
             <h2>Need to follow up with a vendor or request an updated quote?</h2>
             <p>
-              ShaadiOS automatically drafts polite, professional messages using the vendor's hold dates and your celebration timeline. You inspect and send via WhatsApp.
+              ShaadiOS automatically drafts polite, professional messages using the vendor's hold dates and your celebration timeline. Review, save, and copy the draft to send using your preferred app.
             </p>
           </div>
         </div>
         <button
           className="secondary-button pale"
+          disabled={!vendors.length}
           onClick={() => onOpenFollowUp(vendors[1] || vendors[0])}
         >
           Prepare a follow-up <ArrowRight size={16} />
