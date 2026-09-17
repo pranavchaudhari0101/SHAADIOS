@@ -52,3 +52,25 @@ export function formatCurrency(amount) {
 export function cn(...classes) {
   return classes.filter(Boolean).join(' ')
 }
+
+// Use UTC calendar arithmetic so deadlines do not drift across DST or time zones.
+export function isValidDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const time = Date.parse(`${value}T00:00:00Z`)
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value
+}
+
+export function todayIso() {
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+export function shiftDate(value, days) {
+  if (!isValidDate(value) || !Number.isFinite(days)) throw new Error('A valid calendar date is required.')
+  return new Date(Date.parse(`${value}T00:00:00Z`) + days * 86400000).toISOString().slice(0, 10)
+}
+
+export function daysBetween(from, to) {
+  if (!isValidDate(from) || !isValidDate(to)) return 0
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000)
+}

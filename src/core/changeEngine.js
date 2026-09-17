@@ -1,166 +1,65 @@
-// ShaadiOS Change Management Engine
-// Simulates and executes cascading changes (e.g. Wedding Date shift) across the entire wedding graph.
+// Date changes affect internal planning dates, never external vendor agreements.
+import { daysBetween, formatIndianDate, isValidDate, shiftDate, todayIso } from './utils.js'
 
-import { formatIndianDate } from './utils.js'
-
-/**
- * Simulates the ripple effect of changing the wedding date.
- * @param {Object} wedding
- * @param {Array} tasks
- * @param {Array} vendors
- * @param {string} newIsoDate - Target YYYY-MM-DD
- * @returns {Object} Impact report
- */
 export function simulateDateChange(wedding, tasks, vendors, newIsoDate) {
-  const currentDate = new Date(wedding.isoDate || '2027-02-18')
-  const targetDate = new Date(newIsoDate)
-  const diffDays = Math.round((targetDate - currentDate) / (1000 * 60 * 60 * 24))
-
-  const formattedOld = wedding.date || formatIndianDate(wedding.isoDate)
-  const formattedNew = formatIndianDate(newIsoDate)
-
-  const direction = diffDays > 0 ? `pushed by ${diffDays} days` : diffDays < 0 ? `moved earlier by ${Math.abs(diffDays)} days` : 'unchanged'
-
-  const impacts = [
-    {
-      id: 'impact-venue',
-      level: 'Critical',
-      title: 'The Roseate venue hold',
-      category: 'Venue',
-      body: `Check lawn & banquet availability for ${formattedNew} before changing anything else. Token advance window will reset.`,
-      owner: 'Rhea',
-      action: 'Confirm venue availability',
-    },
-    {
-      id: 'impact-photo',
-      level: 'High',
-      title: 'Lenscraft Studios photography team',
-      category: 'Vendor',
-      body: `Your selected lead cinematographer is reserved for ${formattedOld}. Shift requires date hold re-confirmation.`,
-      owner: 'Arjun',
-      action: 'Request hold modification',
-    },
-    {
-      id: 'impact-stay',
-      level: 'High',
-      title: 'Family accommodation room block',
-      category: 'Accommodation',
-      body: `Mom’s 40-room discount quote at Royal Palace Suites needs revised check-in/out dates.`,
-      owner: 'Mom',
-      action: 'Update hotel inquiry dates',
-    },
-    {
-      id: 'impact-invites',
-      level: 'Medium',
-      title: 'Invitation proofing & printing deadline',
-      category: 'Invitations',
-      body: `Date printing window shifts ${diffDays >= 0 ? `back by ${diffDays} days` : `forward by ${Math.abs(diffDays)} days`}. Final proofing deadline will recalculate.`,
-      owner: 'Both of you',
-      action: 'Adjust proofing target',
-    },
-    {
-      id: 'impact-tasting',
-      level: 'Medium',
-      title: 'Catering menu tasting schedule',
-      category: 'Catering',
-      body: `Saffron Tables tasting slot will automatically re-align 4 months prior to ${formattedNew}.`,
-      owner: 'Arjun',
-      action: 'Reschedule tasting window',
-    },
+  const valid = isValidDate(newIsoDate) && newIsoDate >= todayIso() && newIsoDate <= '2100-12-31'
+  const diffDays = valid ? daysBetween(wedding.isoDate, newIsoDate) : 0
+  const affectedTasks = tasks.filter(t => t.status !== 'Done' && isValidDate(t.dueIsoDate))
+  const affectedVendors = vendors.filter(v => v.state !== 'Discovered')
+  const impacts = !valid || !diffDays ? [] : [
+    ...affectedVendors.map(v => ({
+      id: `vendor-${v.id}`, level: v.category === 'Venue' ? 'Critical' : 'High',
+      title: `${v.name} · availability review`, category: v.category, owner: v.owner,
+      body: `Confirm availability for ${formatIndianDate(newIsoDate)}. Existing hold deadlines and contracts stay unchanged until you contact this vendor.`,
+    })),
+    ...affectedTasks.map(t => ({
+      id: `task-${t.id}`, level: 'Medium', title: t.title, category: t.category, owner: t.owner,
+      body: `${formatIndianDate(t.dueIsoDate)} → ${formatIndianDate(shiftDate(t.dueIsoDate, diffDays))}. Internal planning deadline moves by ${Math.abs(diffDays)} days.`,
+    })),
   ]
-
-  const affectedCollaborators = ['Rhea Kapoor', 'Arjun Mehta', 'Meera Kapoor (Mom)']
-
   return {
-    diffDays,
-    direction,
-    formattedOld,
-    formattedNew,
-    impacts,
-    affectedCount: impacts.length,
-    affectedCollaborators,
+    valid, diffDays, impacts, affectedCount: impacts.length,
+    error: !valid ? 'Choose a valid date from today through 2100.' : !diffDays ? 'Choose a date different from your current wedding date.' : '',
+    direction: diffDays > 0 ? `later by ${diffDays} days` : `earlier by ${Math.abs(diffDays)} days`,
+    formattedOld: formatIndianDate(wedding.isoDate), formattedNew: valid ? formatIndianDate(newIsoDate) : '',
+    affectedCollaborators: [...new Set(impacts.map(i => i.owner))],
   }
 }
 
-/**
- * Applies a confirmed wedding date change to the wedding state.
- * Pro-rates task due dates, generates selective notifications, and logs history.
- *
- * @param {Object} currentState - { wedding, tasks, vendors, notifications, activityLog }
- * @param {string} newIsoDate
- * @returns {Object} Updated state
- */
 export function applyDateChange(currentState, newIsoDate) {
-  const { wedding, tasks, notifications = [], activityLog = [] } = currentState
-  const formattedNew = formatIndianDate(newIsoDate)
-
-  // Calculate new days to go
-  const today = new Date()
-  const target = new Date(newIsoDate)
-  const newDaysToGo = Math.max(1, Math.ceil((target - today) / (1000 * 60 * 60 * 24)))
-
-  // Shift task due dates where appropriate
+  const { wedding, tasks, vendors = [], notifications = [], activityLog = [] } = currentState
+  const report = simulateDateChange(wedding, tasks, vendors, newIsoDate)
+  if (report.error) throw new Error(report.error)
   const updatedTasks = tasks.map(task => {
-    if (task.id === 'venue' && task.status !== 'Done') {
-      return {
-        ...task,
-        due: 'Today (Re-check)',
-        priority: 'Critical',
-        reason: `Re-confirm availability with The Roseate for revised wedding date: ${formattedNew}.`,
-      }
-    }
-    if (task.id === 'invitations') {
-      return {
-        ...task,
-        reason: `Card print dates re-aligned to anchor date ${formattedNew}.`,
-      }
-    }
-    return task
+    if (task.status === 'Done' || !isValidDate(task.dueIsoDate)) return task
+    const dueIsoDate = shiftDate(task.dueIsoDate, report.diffDays)
+    return { ...task, dueIsoDate, due: formatIndianDate(dueIsoDate) }
   })
-
-  // Selective notifications generated
-  const newNotifications = [
-    {
-      id: `notif-change-${Date.now()}-1`,
-      title: `Wedding date moved to ${formattedNew}`,
-      description: 'Venue, photography, accommodation, and catering deadlines have been recalculated.',
-      type: 'critical',
-      timestamp: 'Just now',
-      read: false,
-      targetRole: 'owner',
-    },
-    {
-      id: `notif-change-${Date.now()}-2`,
-      title: 'Hotel dates revised for Mom',
-      description: `Accommodation room block inquiry automatically updated to target ${formattedNew}.`,
-      type: 'waiting',
-      timestamp: 'Just now',
-      read: false,
-      targetRole: 'family_lead',
-    },
-    ...notifications,
-  ]
-
-  const newActivity = [
-    {
-      id: `act-${Date.now()}`,
-      text: `Wedding date rescheduled from ${wedding.date} to ${formattedNew} with plan recalculation`,
-      time: 'Just now',
-      author: 'Rhea',
-    },
-    ...activityLog,
-  ]
-
+  // Reconfirmation is separate work: completed contracts retain their history.
+  for (const vendor of vendors.filter(v => v.state !== 'Discovered')) {
+    const linked = tasks.find(t => t.id === vendor.relatedTaskId)
+    const id = `reconfirm-${vendor.id}`
+    const review = {
+      id, title: `Reconfirm ${vendor.name} for ${report.formattedNew}`,
+      owner: vendor.owner, ownerRole: linked?.ownerRole || 'owner', initials: linked?.initials || vendor.owner[0],
+      dueIsoDate: todayIso(), due: formatIndianDate(todayIso()), status: 'Not started', priority: 'Critical',
+      category: vendor.category, ceremony: 'All ceremonies', type: 'vendor', dependsOn: [], blocks: [],
+      reason: 'Contact the vendor before relying on the new date. No external reservation has been changed.', notes: [],
+    }
+    const existing = updatedTasks.findIndex(t => t.id === id)
+    if (existing >= 0) updatedTasks[existing] = { ...review, notes: updatedTasks[existing].notes }
+    else updatedTasks.push(review)
+  }
+  const roles = [...new Set(updatedTasks.filter(t => t.status !== 'Done').map(t => t.ownerRole))]
   return {
     ...currentState,
-    wedding: {
-      ...wedding,
-      date: formattedNew,
-      isoDate: newIsoDate,
-      days: newDaysToGo,
-    },
+    wedding: { ...wedding, isoDate: newIsoDate, date: report.formattedNew, days: daysBetween(todayIso(), newIsoDate) },
     tasks: updatedTasks,
-    notifications: newNotifications,
-    activityLog: newActivity,
+    notifications: [...roles.map((role, index) => ({
+      id: `change-${Date.now()}-${index}`, title: `Wedding date updated to ${report.formattedNew}`,
+      description: 'Internal deadlines moved. Review vendor availability tasks; external agreements are unchanged.',
+      type: 'action', timestamp: 'Just now', read: false, targetRole: role,
+    })), ...notifications].slice(0, 200),
+    activityLog: [{ id: `act-${Date.now()}`, text: `Approved date change from ${wedding.date} to ${report.formattedNew}`, time: 'Just now', author: 'You' }, ...activityLog].slice(0, 200),
   }
 }
