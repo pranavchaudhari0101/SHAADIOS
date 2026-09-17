@@ -1,5 +1,6 @@
 import React from 'react'
 import { ArrowRight, Check } from 'lucide-react'
+import { todayIso } from '../core/utils.js'
 import { Brand } from './Brand.jsx'
 
 const ceremonyOptions = ['Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception']
@@ -41,7 +42,7 @@ export function Onboarding({
     },
     {
       title: 'Give us a baseline sense of scale.',
-      body: 'Rough estimates are fine. They calibrate catering buffers and hotel room blocks.',
+      body: 'Rough estimates are fine. Keep your guest range and budget in one place as you plan.',
     },
     {
       title: 'What has already moved forward?',
@@ -77,7 +78,7 @@ export function Onboarding({
           </div>
         </section>
 
-        <section className="onboarding-form" aria-labelledby="setup-heading">
+        <form className="onboarding-form" aria-labelledby="setup-heading" onSubmit={e => { e.preventDefault(); onContinue() }}>
           <h2 id="setup-heading">
             {step === 1
               ? 'The essentials'
@@ -93,7 +94,7 @@ export function Onboarding({
               <label>
                 Wedding date <span aria-hidden="true">*</span>
                 <input
-                  type="date"
+                  type="date" required min={todayIso()} max="2100-12-31"
                   value={setup.date}
                   onChange={(event) => setSetup({ ...setup, date: event.target.value })}
                 />
@@ -101,16 +102,16 @@ export function Onboarding({
               <label>
                 Primary city <span aria-hidden="true">*</span>
                 <input
-                  type="text"
+                  type="text" required maxLength={100} pattern=".*\\S.*"
                   placeholder="e.g. Jaipur, Udaipur, Delhi, Mumbai"
                   value={setup.city}
                   onChange={(event) => setSetup({ ...setup, city: event.target.value })}
                 />
               </label>
               <label>
-                Couple Names
+                Couple names *
                 <input
-                  type="text"
+                  type="text" required maxLength={100} pattern=".*\\S.*"
                   placeholder="e.g. Rhea & Arjun"
                   value={setup.couple || ''}
                   onChange={(event) => setSetup({ ...setup, couple: event.target.value })}
@@ -131,6 +132,7 @@ export function Onboarding({
                   className={`choice-card ${
                     setup.ceremonies.includes(ceremony) ? 'selected' : ''
                   }`}
+                  aria-pressed={setup.ceremonies.includes(ceremony)}
                   onClick={() => toggleCeremony(ceremony)}
                 >
                   <span className="choice-check">
@@ -199,10 +201,11 @@ export function Onboarding({
             </div>
           )}
 
-          <button className="primary-button full" onClick={onContinue}>
+          {step === 2 && !setup.ceremonies.length && <p className="field-error" role="status">Choose at least one ceremony to continue.</p>}
+          <button type="submit" className="primary-button full" disabled={step === 2 && !setup.ceremonies.length}>
             {step === 4 ? 'Create my wedding plan' : 'Continue'} <ArrowRight size={17} />
           </button>
-        </section>
+        </form>
       </main>
     </div>
   )
