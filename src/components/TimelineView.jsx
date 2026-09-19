@@ -13,9 +13,17 @@ export function TimelineView({ tasks = [], onTask }) {
   const [selectedOwner, setSelectedOwner] = useState('All owners')
   const [selectedStatus, setSelectedStatus] = useState('All status')
 
+  // A task tagged 'All ceremonies' applies to every ceremony filter.
+  const matchesCeremony = (taskCeremony, selected) => {
+    if (selected === 'All events' || selected === 'All ceremonies') return true
+    if (taskCeremony === selected) return true
+    if (taskCeremony === 'All ceremonies') return true
+    return false
+  }
+
   // Filter tasks
   const filteredTasks = tasks.filter((t) => {
-    if (selectedCeremony !== 'All events' && t.ceremony !== selectedCeremony) return false
+    if (!matchesCeremony(t.ceremony, selectedCeremony)) return false
     if (selectedOwner !== 'All owners' && t.owner !== selectedOwner) return false
     if (selectedStatus === 'Open' && t.status === 'Done') return false
     if (selectedStatus === 'Blocked' && t.status !== 'Blocked') return false
@@ -23,30 +31,54 @@ export function TimelineView({ tasks = [], onTask }) {
     return true
   })
 
-  // Group into chronological phases
-  const timelineGroups = [
-    {
-      time: 'THIS WEEK & SEPTEMBER',
-      title: 'Lock Core Foundations',
-      description: 'Venue agreements and photography date holds unlock all secondary planning tracks.',
-      tasks: filteredTasks.filter((t) => ['venue', 'photographer', 'accommodation', 'guest-list'].includes(t.id)),
-    },
-    {
-      time: 'OCTOBER',
-      title: 'Turn Decisions into Bookings',
-      description: 'Tastings, decor direction, guest confirmations, and artist locks.',
-      tasks: filteredTasks.filter((t) => ['tasting', 'decor', 'invitations', 'mehendi-artist', 'sangeet-track'].includes(t.id)),
-    },
-    {
-      time: 'NOVEMBER & BEYOND',
-      title: 'Guest Invites & Logistics',
-      description: 'Physical card dispatch, RSVP collection, outfit trials, and rehearsals.',
-      tasks: filteredTasks.filter((t) => !['venue', 'photographer', 'accommodation', 'guest-list', 'tasting', 'decor', 'invitations', 'mehendi-artist', 'sangeet-track'].includes(t.id)),
-    },
-  ].filter((group) => group.tasks.length > 0)
+  // Group dynamically by due month so new tasks and date changes recalculate.
+  const getDueTime = (t) => {
+    if (!t.dueIsoDate) return Number.POSITIVE_INFINITY
+    const time = new Date(t.dueIsoDate).getTime()
+    return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time
+  }
+
+  const getMonthLabel = (isoDate) => {
+    try {
+      const d = new Date(isoDate)
+      const month = d.toLocaleString('en-IN', { month: 'long' }).toUpperCase()
+      return `${month} ${d.getFullYear()}`
+    } catch (e) {
+      return 'UNSCHEDULED'
+    }
+  }
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => getDueTime(a) - getDueTime(b))
+
+  const groupMap = new Map()
+  for (const task of sortedTasks) {
+    const key = task.status === 'Done' ? 'COMPLETED' : task.dueIsoDate ? getMonthLabel(task.dueIsoDate) : 'UNSCHEDULED'
+    if (!groupMap.has(key)) groupMap.set(key, [])
+    groupMap.get(key).push(task)
+  }
+
+  // Keep COMPLETED group last even though completed tasks may have early dates.
+  const timelineGroups = Array.from(groupMap.entries())
+    .sort(([keyA], [keyB]) => {
+      if (keyA === 'COMPLETED') return 1
+      if (keyB === 'COMPLETED') return -1
+      if (keyA === 'UNSCHEDULED') return 1
+      if (keyB === 'UNSCHEDULED') return -1
+      return new Date(keyA) - new Date(keyB)
+    })
+    .map(([key, groupTasks]) => ({
+      time: key,
+      title: key === 'COMPLETED' ? 'Completed work' : key === 'UNSCHEDULED' ? 'To be scheduled' : `Due ${key.charAt(0) + key.slice(1).toLowerCase()}`,
+      description:
+        key === 'COMPLETED'
+          ? 'Finished tasks stay visible so downstream work keeps its context.'
+          : `${groupTasks.length} task${groupTasks.length === 1 ? '' : 's'} due in this window, sorted by deadline.`,
+      tasks: groupTasks,
+    }))
+    .filter((group) => group.tasks.length > 0)
 
   const owners = ['All owners', ...Array.from(new Set(tasks.map((t) => t.owner)))]
-  const ceremonies = ['All events', 'All ceremonies', 'Mehendi', 'Sangeet', 'Wedding', 'Reception']
+  const ceremonies = ['All events', 'All ceremonies', 'Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception']
 
   return (
     <div className="page">

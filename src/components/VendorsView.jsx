@@ -12,6 +12,16 @@ import {
 } from 'lucide-react'
 import { CameraIcon, VenueIcon, FoodIcon } from './Icons.jsx'
 import { formatCurrency } from '../core/utils.js'
+import { getDaysRemaining } from '../core/priorityEngine.js'
+
+export function getVendorHoldUrgency(vendor) {
+  if (!vendor.holdDeadline || vendor.state === 'Confirmed') return null
+  const daysLeft = getDaysRemaining(vendor.holdDeadline)
+  if (daysLeft < 0) return { tone: 'overdue', label: `Hold expired ${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} ago` }
+  if (daysLeft === 0) return { tone: 'due-soon', label: 'Hold expires today' }
+  if (daysLeft <= 6) return { tone: 'due-soon', label: `Hold expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}` }
+  return { tone: 'on-track', label: `Hold expires in ${daysLeft} days` }
+}
 
 export function VendorsView({
   vendors = [],
@@ -205,12 +215,15 @@ export function VendorsView({
                 </span>
               </div>
 
-              {vendor.holdDeadline && (
-                <div className="vendor-hold-pill">
-                  <Clock3 size={13} />
-                  <span>Hold deadline: <strong>{vendor.holdDeadline}</strong></span>
-                </div>
-              )}
+              {vendor.holdDeadline && (() => {
+                const urgency = getVendorHoldUrgency(vendor)
+                return (
+                  <div className={`vendor-hold-pill${urgency ? ` ${urgency.tone}` : ''}`}>
+                    <Clock3 size={13} />
+                    <span>Hold deadline: <strong>{vendor.holdDeadline}</strong>{urgency ? ` · ${urgency.label}` : ''}</span>
+                  </div>
+                )
+              })()}
 
               <div className="vendor-action-bar">
                 <div className="vendor-action">

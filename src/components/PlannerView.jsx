@@ -19,7 +19,7 @@ export function PlannerView({
   onTask,
 }) {
   const [prompt, setPrompt] = useState('')
-  const [currentResponse, setCurrentResponse] = useState(null)
+  const [history, setHistory] = useState([])
 
   const risks = detectRisks({ wedding, tasks, vendors })
   const health = calculateHealthScore(tasks, risks)
@@ -30,12 +30,16 @@ export function PlannerView({
     if (!q) return
 
     const result = queryPlanner(q, { wedding, tasks, vendors, people })
-    setCurrentResponse({
-      query: q,
-      answer: result.answer,
-      actionTaskId: result.actionTaskId,
-      actionLabel: result.actionLabel,
-    })
+    setHistory((prev) => [
+      ...prev,
+      {
+        id: `qa-${Date.now()}-${prev.length}`,
+        query: q,
+        answer: result.answer,
+        actionTaskId: result.actionTaskId,
+        actionLabel: result.actionLabel,
+      },
+    ])
     setPrompt('')
   }
 
@@ -96,50 +100,55 @@ export function PlannerView({
         </div>
 
         <div className="chat-area">
-          {currentResponse ? (
-            <div className="planner-answer">
-              <span className="assistant-avatar">
-                <Sparkles size={17} />
-              </span>
-              <div>
-                <p className="assistant-name">ShaadiOS AI Coordinator</p>
-                <div className="answer-text">
-                  {currentResponse.answer.split('\n\n').map((para, i) => (
-                    <p key={i}>
-                      {para.split('**').map((chunk, j) =>
-                        j % 2 === 1 ? <strong key={j}>{chunk}</strong> : chunk
-                      )}
-                    </p>
-                  ))}
-                </div>
-
-                <div className="answer-actions">
-                  {currentResponse.actionTaskId && (
-                    <button
-                      className="primary-button compact"
-                      onClick={() => {
-                        const target = tasks.find((t) => t.id === currentResponse.actionTaskId)
-                        if (target) onTask(target)
-                      }}
-                    >
-                      {currentResponse.actionLabel || 'Open connected task'} <ArrowRight size={14} />
-                    </button>
-                  )}
-                  <button
-                    className="secondary-button compact"
-                    onClick={() => setCurrentResponse(null)}
-                  >
-                    Ask another question
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
+          {history.length === 0 ? (
             <div className="chat-empty">
               <span><Sparkles size={22} /></span>
               <h2>What would make your wedding feel lighter today?</h2>
               <p>Pick a question above or type anything about dates, budgets, or family delegation.</p>
             </div>
+          ) : (
+            <>
+              {history.map((entry) => (
+                <div className="planner-answer" key={entry.id}>
+                  <span className="assistant-avatar">
+                    <Sparkles size={17} />
+                  </span>
+                  <div>
+                    <p className="assistant-name">ShaadiOS AI Coordinator</p>
+                    <p className="user-query">You asked: {entry.query}</p>
+                    <div className="answer-text">
+                      {entry.answer.split('\n\n').map((para, i) => (
+                        <p key={i}>
+                          {para.split('**').map((chunk, j) =>
+                            j % 2 === 1 ? <strong key={j}>{chunk}</strong> : chunk
+                          )}
+                        </p>
+                      ))}
+                    </div>
+
+                    {entry.actionTaskId && (
+                      <div className="answer-actions">
+                        <button
+                          className="primary-button compact"
+                          onClick={() => {
+                            const target = tasks.find((t) => t.id === entry.actionTaskId)
+                            if (target) onTask(target)
+                          }}
+                        >
+                          {entry.actionLabel || 'Open connected task'} <ArrowRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button
+                className="secondary-button compact"
+                onClick={() => setHistory([])}
+              >
+                Clear conversation
+              </button>
+            </>
           )}
 
           <div className="planner-input">

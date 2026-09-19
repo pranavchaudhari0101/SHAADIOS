@@ -22,12 +22,13 @@ export function TasksView({
   const activePerson = people.find((p) => p.roleKey === activeRole) || people[0]
   const activeFirstName = activePerson?.name ? activePerson.name.split(' ')[0] : 'Rhea'
 
-  // Filter tasks based on selected mode
+  // Filter tasks based on selected mode.
+  // Tasks tagged 'All ceremonies' apply to every ceremony filter.
   const filtered = tasks.filter((t) => {
     if (filterMode === 'me' && !t.owner.includes(activeFirstName) && t.owner !== 'Both of you') return false
     if (filterMode === 'waiting' && t.status !== 'Waiting') return false
     if (filterMode === 'blocked' && t.status !== 'Blocked') return false
-    if (selectedCeremony !== 'All' && t.ceremony !== selectedCeremony) return false
+    if (selectedCeremony !== 'All' && t.ceremony !== selectedCeremony && t.ceremony !== 'All ceremonies') return false
     return true
   })
 
@@ -106,10 +107,12 @@ export function TasksView({
             className="filter-select-mini"
           >
             <option value="All">All Ceremonies</option>
-            <option value="Wedding">Wedding</option>
             <option value="Mehendi">Mehendi</option>
+            <option value="Haldi">Haldi</option>
             <option value="Sangeet">Sangeet</option>
+            <option value="Wedding">Wedding</option>
             <option value="Reception">Reception</option>
+            <option value="All ceremonies">Cross-ceremony only</option>
           </select>
         </div>
       </div>

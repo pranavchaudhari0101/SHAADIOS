@@ -454,6 +454,7 @@ svg { stroke-width: 1.8; }
 .assistant-avatar { align-items: center; background: var(--rose-pale); border-radius: 10px; color: var(--rose); display: flex; flex: 0 0 auto; height: 33px; justify-content: center; width: 33px; }
 .planner-answer > div { background: #fffaf8; border: 1px solid #f0e5df; border-radius: 0 13px 13px 13px; padding: 13px; }
 .assistant-name { color: var(--rose); font-size: 10px; font-weight: 700; margin: 0 0 7px; }
+.user-query { color: var(--ink); font-size: 12px; font-weight: 700; margin: 0 0 8px; }
 .planner-answer > div > p:not(.assistant-name) { color: var(--ink-soft); font-size: 12px; line-height: 1.6; margin: 0; }
 .answer-actions { display: flex; gap: 13px; margin-top: 12px; }
 .answer-actions button { align-items: center; background: transparent; color: var(--rose); display: flex; font-size: 10px; font-weight: 700; gap: 4px; padding: 0; }
@@ -711,6 +712,9 @@ svg { stroke-width: 1.8; }
   padding: 4px 8px;
 }
 .vendor-hold-pill strong { color: var(--ink); }
+.vendor-hold-pill.due-soon { background: var(--amber-pale); border: 1px solid var(--amber); color: var(--ink); }
+.vendor-hold-pill.overdue { background: var(--rose-pale); border: 1px solid var(--rose); color: var(--rose-deep); }
+.vendor-hold-pill.overdue strong { color: var(--rose-deep); }
 
 .vendor-action-bar {
   align-items: center;
