@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bell,
   CalendarDays,
+  Calculator,
   CheckCircle2,
   ChevronRight,
   CircleAlert,
@@ -25,6 +26,7 @@ export function HomeView({
   onChangeDate,
   onTab,
   onResolveRisk,
+  onOpenContingency,
   activeRole = 'owner',
 }) {
   const risks = detectRisks({ wedding, tasks, vendors })
@@ -59,6 +61,17 @@ export function HomeView({
   const activePerson = people.find((p) => p.roleKey === activeRole) || people[0]
   const firstName = activePerson?.name ? activePerson.name.split(' ')[0] : 'Rhea'
 
+  // Calculate live financial commitments
+  const totalCommitted = vendors.reduce((acc, v) => acc + (v.amountNumber || 0), 0)
+  const totalPaid = vendors.reduce((acc, v) => {
+    const paidInMilestones = (v.milestones || [])
+      .filter((m) => m.status === 'Paid')
+      .reduce((sum, m) => sum + (m.amount || 0), 0)
+    return acc + paidInMilestones
+  }, 0)
+  const budgetNum = wedding.budgetAmount || 2400000
+  const committedPct = Math.min(100, Math.round((totalCommitted / budgetNum) * 100))
+
   return (
     <div className="page home-page">
       <div className="page-intro">
@@ -83,6 +96,36 @@ export function HomeView({
           </div>
         </div>
       </div>
+
+      {/* Wedding Budget & Cash Flow Quick Glance */}
+      <section className="home-budget-strip">
+        <div className="budget-strip-meta">
+          <div>
+            <span className="eyebrow" style={{ margin: 0 }}>CASH FLOW & ALLOCATION</span>
+            <h3>{wedding.budget || '₹24L budget'}</h3>
+          </div>
+          <div className="budget-strip-actions">
+            {onOpenContingency && (
+              <button className="link-button contingency-trigger-btn" onClick={onOpenContingency}>
+                <Calculator size={14} /> Audit Taxes & GST (+18%)
+              </button>
+            )}
+            <button className="link-button" onClick={() => onTab('vendors')}>
+              View vendor contracts ({vendors.length}) <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="budget-strip-progress-wrapper">
+          <div className="budget-strip-bar">
+            <div className="budget-strip-fill" style={{ width: `${committedPct}%` }}></div>
+          </div>
+          <div className="budget-strip-legend">
+            <span><strong>₹{totalCommitted.toLocaleString('en-IN')}</strong> committed ({committedPct}%)</span>
+            <span><strong>₹{totalPaid.toLocaleString('en-IN')}</strong> paid in advances</span>
+            <span><strong>₹{Math.max(0, budgetNum - totalCommitted).toLocaleString('en-IN')}</strong> available buffer</span>
+          </div>
+        </div>
+      </section>
 
       {/* Weekly Focus */}
       <section className="weekly-focus">

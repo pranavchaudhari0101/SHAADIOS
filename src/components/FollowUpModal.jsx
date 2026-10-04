@@ -4,15 +4,18 @@ import {
   Copy,
   ExternalLink,
   MessageCircle,
+  Phone,
   Sparkles,
   X,
 } from 'lucide-react'
+import { openWhatsApp, getVendorWhatsAppMessage } from '../core/whatsapp.js'
 
 export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
-  const defaultMessage = `Hi ${vendor?.contactPerson || vendor?.name || 'there'},\n\nHope you are having a wonderful week! We are finalizing the key contracts for our wedding on ${wedding.date} in ${wedding.city}.\n\nCould you please share the finalized agreement / revised quotation by this Friday? We would love to lock this in and confirm our dates.\n\nWarm regards,\n${wedding.couple}`
+  const defaultMessage = getVendorWhatsAppMessage(vendor, wedding)
 
   const [message, setMessage] = useState(defaultMessage)
   const [copied, setCopied] = useState(false)
+  const [phone, setPhone] = useState(vendor?.phone || '')
 
   if (!vendor) return null
 
@@ -22,8 +25,9 @@ export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
     setTimeout(() => setCopied(false), 2500)
   }
 
-  const handleSend = (channel = 'whatsapp') => {
-    onSent(vendor, channel, message)
+  const handleSendWhatsApp = () => {
+    openWhatsApp({ phone, message })
+    onSent(vendor, 'whatsapp', message)
   }
 
   return (
@@ -33,7 +37,7 @@ export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
         <header>
           <div>
             <p className="eyebrow">CONTEXT-AWARE VENDOR ASSISTANT</p>
-            <h2 id="followup-title">Prepare Follow-Up for {vendor.name}</h2>
+            <h2 id="followup-title">Follow-Up with {vendor.name}</h2>
           </div>
           <button className="icon-button" onClick={onClose} aria-label="Close message composer">
             <X size={20} />
@@ -43,11 +47,29 @@ export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
         <div className="modal-body">
           <div className="composer-context-pill">
             <Sparkles size={16} />
-            <span>Draft generated using stored vendor hold deadline ({vendor.holdDeadline || 'Upcoming'}) and your {wedding.city} wedding anchor.</span>
+            <span>
+              Pre-drafted with your {wedding.city} wedding date ({wedding.date}) and {vendor.name}’s current status ({vendor.action}).
+            </span>
+          </div>
+
+          <div className="form-fields" style={{ marginBottom: 12 }}>
+            <label>
+              <span>WhatsApp / Mobile Number</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Phone size={16} className="text-ink-soft" />
+                <input
+                  type="text"
+                  placeholder="+91 98XXX XXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </label>
           </div>
 
           <label className="composer-label">
-            <span>Message Content (Editable)</span>
+            <span>Message Content (Pre-formatted for WhatsApp)</span>
             <textarea
               className="composer-textarea"
               value={message}
@@ -57,17 +79,18 @@ export function FollowUpModal({ vendor, wedding, onClose, onSent }) {
           </label>
 
           <div className="composer-vendor-meta">
-            <span>Recipient: <strong>{vendor.contactPerson || vendor.name}</strong> ({vendor.phone || 'Phone on file'})</span>
+            <span>Recipient: <strong>{vendor.contactPerson || vendor.name}</strong></span>
             <span>Category: <strong>{vendor.category}</strong></span>
+            <span>Quote: <strong>{vendor.amount || '—'}</strong></span>
           </div>
         </div>
 
         <footer className="modal-actions">
           <button className="secondary-button" onClick={handleCopy}>
-            {copied ? <><Check size={16} /> Copied to clipboard</> : <><Copy size={16} /> Copy text</>}
+            {copied ? <><Check size={16} /> Copied text</> : <><Copy size={16} /> Copy text</>}
           </button>
-          <button className="primary-button" onClick={() => handleSend('whatsapp')}>
-            <MessageCircle size={16} /> Send via WhatsApp <ExternalLink size={14} />
+          <button className="primary-button" onClick={handleSendWhatsApp} style={{ background: '#25D366', borderColor: '#25D366' }}>
+            <MessageCircle size={16} /> Open in WhatsApp <ExternalLink size={14} />
           </button>
         </footer>
       </section>

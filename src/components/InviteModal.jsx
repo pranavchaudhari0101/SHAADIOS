@@ -1,12 +1,15 @@
 import React, { useState } from 'react'
 import {
+  ExternalLink,
+  MessageCircle,
   Send,
   ShieldCheck,
   UsersRound,
   X,
 } from 'lucide-react'
+import { openWhatsApp, getCollaboratorInviteWhatsAppMessage } from '../core/whatsapp.js'
 
-export function InviteModal({ onClose, onInvite }) {
+export function InviteModal({ onClose, onInvite, wedding }) {
   const [name, setName] = useState('')
   const [emailOrPhone, setEmailOrPhone] = useState('')
   const [roleKey, setRoleKey] = useState('family_lead')
@@ -29,10 +32,7 @@ export function InviteModal({ onClose, onInvite }) {
     },
   ]
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!name.trim()) return
-
+  const createPersonObject = () => {
     const roleObj = roles.find((r) => r.key === roleKey)
     const initials = name
       .trim()
@@ -42,7 +42,7 @@ export function InviteModal({ onClose, onInvite }) {
       .substring(0, 2)
       .toUpperCase()
 
-    const newPerson = {
+    return {
       id: `p-${Date.now()}`,
       name: name.trim(),
       role: roleObj?.label || 'Collaborator',
@@ -53,7 +53,20 @@ export function InviteModal({ onClose, onInvite }) {
       tint: roleKey === 'co_owner' ? 'sage' : roleKey === 'family_lead' ? 'soft' : 'lilac',
       note: 'Invited collaborator · Ready to collaborate',
     }
+  }
 
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!name.trim()) return
+    const newPerson = createPersonObject()
+    onInvite(newPerson)
+  }
+
+  const handleInviteViaWhatsApp = () => {
+    if (!name.trim()) return
+    const newPerson = createPersonObject()
+    const msg = getCollaboratorInviteWhatsAppMessage(newPerson, wedding)
+    openWhatsApp({ phone: emailOrPhone, message: msg })
     onInvite(newPerson)
   }
 
@@ -90,11 +103,11 @@ export function InviteModal({ onClose, onInvite }) {
               </label>
 
               <label>
-                <span>Email or WhatsApp Number *</span>
+                <span>WhatsApp Mobile Number or Email *</span>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. meera@gmail.com or +91 98200 12345"
+                  placeholder="e.g. +91 98200 12345 or meera@example.com"
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
                 />
@@ -137,8 +150,17 @@ export function InviteModal({ onClose, onInvite }) {
             <button type="button" className="secondary-button" onClick={onClose}>
               Cancel
             </button>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ borderColor: '#25D366', color: '#128C7E' }}
+              disabled={!name.trim()}
+              onClick={handleInviteViaWhatsApp}
+            >
+              <MessageCircle size={16} /> Invite via WhatsApp <ExternalLink size={13} />
+            </button>
             <button type="submit" className="primary-button" disabled={!name.trim()}>
-              <Send size={16} /> Send invitation
+              <Send size={16} /> Save collaborator
             </button>
           </footer>
         </form>

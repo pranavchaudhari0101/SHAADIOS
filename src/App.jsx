@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   ArrowRight,
   Bell,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  Download,
   Handshake,
   Home,
+  Hotel,
   LayoutList,
   Menu,
   MoreHorizontal,
   PanelLeftClose,
+  Printer,
   RotateCcw,
   Sparkles,
+  Upload,
   UsersRound,
   X,
 } from 'lucide-react'
@@ -22,10 +26,14 @@ import {
   loadSavedState,
   saveState,
   resetState,
+  exportStateAsJSON,
   DEFAULT_WEDDING,
   DEFAULT_TASKS,
   DEFAULT_PEOPLE,
   DEFAULT_VENDORS,
+  DEFAULT_GUESTS,
+  DEFAULT_ROOMS,
+  DEFAULT_CONTINGENCY,
   DEFAULT_NOTIFICATIONS,
   DEFAULT_ACTIVITY,
 } from './core/weddingState.js'
@@ -48,20 +56,24 @@ import { TimelineView } from './components/TimelineView.jsx'
 import { TasksView } from './components/TasksView.jsx'
 import { PeopleView } from './components/PeopleView.jsx'
 import { VendorsView } from './components/VendorsView.jsx'
+import { GuestsView } from './components/GuestsView.jsx'
 import { PlannerView } from './components/PlannerView.jsx'
 import { TaskModal } from './components/TaskModal.jsx'
 import { ChangeModal } from './components/ChangeModal.jsx'
+import { ContingencyModal } from './components/ContingencyModal.jsx'
 import { NotificationCenter } from './components/NotificationCenter.jsx'
 import { FollowUpModal } from './components/FollowUpModal.jsx'
 import { InviteModal } from './components/InviteModal.jsx'
 import { AddTaskModal } from './components/AddTaskModal.jsx'
+import { MasterRunSheetModal } from './components/MasterRunSheetModal.jsx'
 
 const navItems = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'timeline', label: 'Timeline', icon: CalendarDays },
   { id: 'tasks', label: 'Tasks', icon: LayoutList },
-  { id: 'people', label: 'People', icon: UsersRound },
   { id: 'vendors', label: 'Vendors', icon: Handshake },
+  { id: 'guests', label: 'Guests & Rooms', icon: Hotel },
+  { id: 'people', label: 'People', icon: UsersRound },
   { id: 'planner', label: 'Planner', icon: Sparkles },
 ]
 
@@ -73,6 +85,9 @@ export default function App() {
   const [tasks, setTasks] = useState(initialData.tasks || DEFAULT_TASKS)
   const [vendors, setVendors] = useState(initialData.vendors || DEFAULT_VENDORS)
   const [people, setPeople] = useState(initialData.people || DEFAULT_PEOPLE)
+  const [guests, setGuests] = useState(initialData.guests || DEFAULT_GUESTS)
+  const [rooms, setRooms] = useState(initialData.rooms || DEFAULT_ROOMS)
+  const [contingency, setContingency] = useState(initialData.contingency || DEFAULT_CONTINGENCY)
   const [notifications, setNotifications] = useState(initialData.notifications || DEFAULT_NOTIFICATIONS)
   const [activityLog, setActivityLog] = useState(initialData.activityLog || DEFAULT_ACTIVITY)
   const [activeRole, setActiveRole] = useState(initialData.activeRole || 'owner')
@@ -88,19 +103,25 @@ export default function App() {
   const [changeOpen, setChangeOpen] = useState(false)
   const [changeStep, setChangeStep] = useState('edit')
   const [proposal, setProposal] = useState('2027-02-25')
+  const [contingencyModalOpen, setContingencyModalOpen] = useState(false)
   const [notifCenterOpen, setNotifCenterOpen] = useState(false)
   const [followUpVendor, setFollowUpVendor] = useState(null)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false)
+  const [runSheetOpen, setRunSheetOpen] = useState(false)
+
+  const fileInputRef = useRef(null)
 
   // Onboarding setup state
   const [onboardingStep, setOnboardingStep] = useState(1)
   const [setup, setSetup] = useState({
     date: '2027-02-18',
+    season: 'February 2027 (Spring Festive)',
     city: 'Jaipur',
     couple: 'Rhea & Arjun',
     guests: '150–300',
-    budget: '₹15–25L',
+    budget: '₹25–50L',
+    templateId: 'north_indian',
     ceremonies: ['Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception'],
     booked: ['Venue'],
   })
@@ -117,11 +138,14 @@ export default function App() {
       tasks: synchronizedTasks,
       vendors,
       people,
+      guests,
+      rooms,
+      contingency,
       notifications,
       activityLog,
       activeRole,
     })
-  }, [wedding, synchronizedTasks, vendors, people, notifications, activityLog, activeRole])
+  }, [wedding, synchronizedTasks, vendors, people, guests, rooms, contingency, notifications, activityLog, activeRole])
 
   const notify = (message) => {
     setToast(message)
@@ -138,6 +162,101 @@ export default function App() {
   const risks = useMemo(() => detectRisks({ wedding, tasks: synchronizedTasks, vendors }), [wedding, synchronizedTasks, vendors])
   const health = useMemo(() => calculateHealthScore(synchronizedTasks, risks), [synchronizedTasks, risks])
   const unreadNotifCount = notifications.filter((n) => !n.read).length
+
+  // Backup & Export Handlers
+  const handleExportBackup = () => {
+    exportStateAsJSON({
+      wedding,
+      tasks: synchronizedTasks,
+      vendors,
+      people,
+      guests,
+      rooms,
+      contingency,
+      notifications,
+      activityLog,
+      activeRole,
+    })
+    notify('Master wedding backup JSON downloaded!')
+  }
+
+  const handleImportBackup = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result)
+        if (parsed.wedding && parsed.tasks) {
+          setWedding(parsed.wedding)
+          setTasks(parsed.tasks)
+          if (parsed.vendors) setVendors(parsed.vendors)
+          if (parsed.people) setPeople(parsed.people)
+          if (parsed.guests) setGuests(parsed.guests)
+          if (parsed.rooms) setRooms(parsed.rooms)
+          if (parsed.contingency) setContingency(parsed.contingency)
+          if (parsed.notifications) setNotifications(parsed.notifications)
+          if (parsed.activityLog) setActivityLog(parsed.activityLog)
+          notify('✓ Wedding plan restored successfully from backup!')
+        } else {
+          notify('Invalid ShaadiOS backup file format.')
+        }
+      } catch (err) {
+        notify('Failed to parse backup file.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  // Guest & Room Handlers
+  const handleUpdateGuest = (updatedGuest) => {
+    setGuests((prev) => prev.map((g) => (g.id === updatedGuest.id ? updatedGuest : g)))
+    notify(`Updated RSVP status for ${updatedGuest.name}.`)
+  }
+
+  const handleAddGuest = (newGuest) => {
+    setGuests((prev) => [newGuest, ...prev])
+  }
+
+  const handleAssignRoom = (roomId, guestId, shouldAssign) => {
+    const targetRoom = rooms.find((r) => r.id === roomId)
+
+    setRooms((prev) =>
+      prev.map((r) => {
+        if (r.id === roomId) {
+          const currentIds = r.assignedGuestIds || []
+          const updated = shouldAssign
+            ? [...new Set([...currentIds, guestId])]
+            : currentIds.filter((id) => id !== guestId)
+          return {
+            ...r,
+            assignedGuestIds: updated,
+            status: updated.length > 0 ? 'Occupied' : 'Available',
+          }
+        }
+        return r
+      })
+    )
+
+    setGuests((prev) =>
+      prev.map((g) => {
+        if (g.id === guestId) {
+          return {
+            ...g,
+            roomAssigned: shouldAssign ? targetRoom?.roomNumber : null,
+          }
+        }
+        return g
+      })
+    )
+  }
+
+  const handleSaveContingency = (newContingency) => {
+    setContingency(newContingency)
+    notify('Contingency, 18% GST & hidden overheads calibrated!')
+  }
+
 
   // Handlers
   const handleTaskComplete = (taskToComplete) => {
@@ -305,15 +424,24 @@ export default function App() {
   }
 
   const handleCreateWeddingFromOnboarding = () => {
-    const formattedDate = formatIndianDate(setup.date) || DEFAULT_WEDDING.date
+    const formattedDate = formatIndianDate(setup.date) || setup.season || DEFAULT_WEDDING.date
+    let budgetAmount = 2400000
+    if (setup.budget?.includes('15L')) budgetAmount = 1500000
+    else if (setup.budget?.includes('50L+')) budgetAmount = 6000000
+    else if (setup.budget?.includes('25–50L')) budgetAmount = 3500000
+    else if (setup.budget?.includes('15–25L')) budgetAmount = 2000000
+
     const updatedWedding = {
       ...DEFAULT_WEDDING,
       couple: setup.couple || 'Rhea & Arjun',
       city: setup.city || 'Jaipur',
       date: formattedDate,
-      isoDate: setup.date,
+      isoDate: setup.date || '2027-02-18',
+      season: setup.season,
       guests: `${setup.guests} guests`,
       budget: `${setup.budget} budget`,
+      budgetAmount,
+      templateId: setup.templateId || 'north_indian',
       ceremonies: setup.ceremonies,
     }
 
@@ -340,6 +468,9 @@ export default function App() {
     setTasks(fresh.tasks)
     setVendors(fresh.vendors)
     setPeople(fresh.people)
+    setGuests(fresh.guests)
+    setRooms(fresh.rooms)
+    setContingency(fresh.contingency)
     setNotifications(fresh.notifications)
     setActivityLog(fresh.activityLog)
     setActiveRole('owner')
@@ -402,6 +533,15 @@ export default function App() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
+
+      {/* Hidden file input for JSON restore */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleImportBackup}
+      />
 
       {/* Navigation Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'is-open' : ''}`} aria-label="Wedding navigation">
@@ -504,11 +644,35 @@ export default function App() {
 
           <div className="topbar-actions">
             <button
+              className="topbar-tool-btn"
+              onClick={() => setRunSheetOpen(true)}
+              title="Print master wedding run-sheet"
+            >
+              <Printer size={15} /> <span className="desktop-text">Run-Sheet</span>
+            </button>
+
+            <button
+              className="topbar-tool-btn"
+              onClick={handleExportBackup}
+              title="Download offline backup JSON"
+            >
+              <Download size={15} /> <span className="desktop-text">Backup</span>
+            </button>
+
+            <button
+              className="topbar-tool-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Restore from JSON backup"
+            >
+              <Upload size={15} /> <span className="desktop-text">Restore</span>
+            </button>
+
+            <button
               className="reset-state-button"
               onClick={handleResetDemo}
               title="Reset state to baseline demo"
             >
-              <RotateCcw size={13} /> Reset demo
+              <RotateCcw size={13} /> Reset
             </button>
 
             <button
@@ -527,7 +691,7 @@ export default function App() {
                 setChangeStep('edit')
               }}
             >
-              <CalendarDays size={17} /> Change wedding date
+              <CalendarDays size={17} /> Change date
             </button>
           </div>
         </header>
@@ -546,6 +710,7 @@ export default function App() {
                 setChangeStep('edit')
               }}
               onTab={setActiveTab}
+              onOpenContingency={() => setContingencyModalOpen(true)}
             />
           )}
 
@@ -560,20 +725,10 @@ export default function App() {
             <TasksView
               tasks={synchronizedTasks}
               people={people}
+              wedding={wedding}
               activeRole={activeRole}
               onTask={(t) => setSelectedTaskId(t.id)}
               onOpenAddTask={() => setAddTaskModalOpen(true)}
-            />
-          )}
-
-          {activeTab === 'people' && (
-            <PeopleView
-              people={people}
-              tasks={synchronizedTasks}
-              activeRole={activeRole}
-              onSwitchRole={setActiveRole}
-              onOpenInvite={() => setInviteModalOpen(true)}
-              onTask={(t) => setSelectedTaskId(t.id)}
             />
           )}
 
@@ -585,6 +740,31 @@ export default function App() {
               onStageChange={handleVendorStageChange}
               onOpenFollowUp={(v) => setFollowUpVendor(v)}
               onNotify={notify}
+            />
+          )}
+
+          {activeTab === 'guests' && (
+            <GuestsView
+              guests={guests}
+              rooms={rooms}
+              wedding={wedding}
+              onUpdateGuest={handleUpdateGuest}
+              onAddGuest={handleAddGuest}
+              onAssignRoom={handleAssignRoom}
+              onNotify={notify}
+            />
+          )}
+
+          {activeTab === 'people' && (
+            <PeopleView
+              people={people}
+              tasks={synchronizedTasks}
+              wedding={wedding}
+              activeRole={activeRole}
+              onSwitchRole={setActiveRole}
+              onOpenInvite={() => setInviteModalOpen(true)}
+              onPrintMaster={() => setRunSheetOpen(true)}
+              onTask={(t) => setSelectedTaskId(t.id)}
             />
           )}
 
@@ -618,6 +798,7 @@ export default function App() {
       {selectedTask && (
         <TaskModal
           task={selectedTask}
+          wedding={wedding}
           allTasks={synchronizedTasks}
           people={people}
           onClose={() => setSelectedTaskId(null)}
@@ -626,6 +807,19 @@ export default function App() {
           onDelegate={handleTaskDelegate}
           onAddNote={handleAddNote}
           onOpenPrerequisite={(prereq) => setSelectedTaskId(prereq.id)}
+        />
+      )}
+
+      {/* Master Run Sheet Printable Modal */}
+      {runSheetOpen && (
+        <MasterRunSheetModal
+          wedding={wedding}
+          tasks={synchronizedTasks}
+          vendors={vendors}
+          people={people}
+          guests={guests}
+          rooms={rooms}
+          onClose={() => setRunSheetOpen(false)}
         />
       )}
 
@@ -641,6 +835,17 @@ export default function App() {
           vendors={vendors}
           onClose={() => setChangeOpen(false)}
           onApply={handleApplyDateChange}
+        />
+      )}
+
+      {/* Contingency & Hidden Taxes Audit Modal */}
+      {contingencyModalOpen && (
+        <ContingencyModal
+          wedding={wedding}
+          vendors={vendors}
+          contingency={contingency}
+          onSave={handleSaveContingency}
+          onClose={() => setContingencyModalOpen(false)}
         />
       )}
 
@@ -673,6 +878,7 @@ export default function App() {
       {/* Invite Collaborator Modal */}
       {inviteModalOpen && (
         <InviteModal
+          wedding={wedding}
           onClose={() => setInviteModalOpen(false)}
           onInvite={handleInvitePerson}
         />

@@ -1,20 +1,24 @@
-import React from 'react'
 import {
   ArrowRight,
   Eye,
   HeartHandshake,
+  MessageCircle,
   MoreHorizontal,
   Plus,
+  Printer,
   ShieldCheck,
   UserCheck,
   UsersRound,
 } from 'lucide-react'
+import { openWhatsApp, getCollaboratorInviteWhatsAppMessage } from '../core/whatsapp.js'
 
 export function PeopleView({
   people = [],
   tasks = [],
+  wedding,
   onOpenInvite,
   onTask,
+  onPrintMaster,
   activeRole = 'owner',
   onSwitchRole,
 }) {
@@ -25,14 +29,21 @@ export function PeopleView({
       <div className="page-intro compact-intro">
         <div>
           <p className="eyebrow">YOUR WEDDING TEAM & COLLABORATORS</p>
-          <h1>People</h1>
+          <h1>People & Roles</h1>
           <p className="subtitle">
-            Give every person exactly the information and responsibility they need without group-chat confusion.
+            Give every person clear responsibility without group-chat chaos. One-click WhatsApp coordination.
           </p>
         </div>
-        <button className="primary-button compact" onClick={onOpenInvite}>
-          <Plus size={17} /> Invite collaborator
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {onPrintMaster && (
+            <button className="secondary-button compact" onClick={onPrintMaster} title="Print Master Run-Sheet for Family">
+              <Printer size={16} /> Print run-sheet
+            </button>
+          )}
+          <button className="primary-button compact" onClick={onOpenInvite}>
+            <Plus size={17} /> Invite collaborator
+          </button>
+        </div>
       </div>
 
       {/* Role Perspective Switcher Bar */}
@@ -88,14 +99,14 @@ export function PeopleView({
               </div>
               <h2>{person.name}</h2>
               <p className="person-contact-line">
-                {person.email || person.phone || 'Contact on file'}
+                {person.phone || person.email || 'Contact on file'}
               </p>
               <p className="person-work-count">
                 <strong>{assignedTasks.length}</strong> tasks assigned
                 {waitingCount > 0 && ` · ${waitingCount} waiting`}
               </p>
 
-              <div className="person-card-actions">
+              <div className="person-card-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
                 <button
                   className="link-button"
                   onClick={() => {
@@ -104,6 +115,18 @@ export function PeopleView({
                   }}
                 >
                   {person.roleKey === 'family_lead' ? 'View Mom’s work' : 'View tasks'} <ArrowRight size={15} />
+                </button>
+
+                <button
+                  className="secondary-button compact"
+                  style={{ borderColor: '#25D366', color: '#128C7E', fontSize: 12, padding: '4px 10px', minHeight: 32 }}
+                  onClick={() => {
+                    const msg = getCollaboratorInviteWhatsAppMessage(person, wedding)
+                    openWhatsApp({ phone: person.phone, message: msg })
+                  }}
+                  title="Ping collaborator on WhatsApp"
+                >
+                  <MessageCircle size={14} /> WhatsApp
                 </button>
               </div>
             </article>

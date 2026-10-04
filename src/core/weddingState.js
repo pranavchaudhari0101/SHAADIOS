@@ -1,7 +1,63 @@
-// ShaadiOS Wedding State Engine
-// Manages the connected wedding state model, initial seed data, and local persistence.
-
 export const STORAGE_KEY = 'shaadios_wedding_state_v1'
+export const BACKUP_STORAGE_KEY = 'shaadios_backup_v1'
+
+export const REGIONAL_TEMPLATES = [
+  {
+    id: 'north_indian',
+    name: 'North Indian Grand',
+    tagline: 'Classic 3-Day Sangeet & Baarat Celebration',
+    ceremonies: ['Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception'],
+    defaultBudget: '₹25–50L',
+    defaultGuests: '300–500',
+    icon: '🪕',
+    highlights: 'High-energy Sangeet, Royal Baraat, Midnight Pheras, Grand Reception',
+    presetBooked: ['Venue'],
+  },
+  {
+    id: 'south_indian',
+    name: 'South Indian Muhurtham',
+    tagline: 'Vibrant Traditional Rituals & Traditional Feast',
+    ceremonies: ['Vratham', 'Oonjal', 'Muhurtham', 'Reception'],
+    defaultBudget: '₹15–25L',
+    defaultGuests: '300–500',
+    icon: '🪷',
+    highlights: 'Auspicious Morning Muhurtham, Nadaswaram, Sadhya Feast, Evening Reception',
+    presetBooked: ['Venue', 'Catering'],
+  },
+  {
+    id: 'destination',
+    name: 'Royal Destination Weekend',
+    tagline: 'Palace or Beach Luxury Guest Experience',
+    ceremonies: ['Welcome Cocktail', 'Poolside Mehendi', 'Sangeet Gala', 'Royal Pheras', 'Reception'],
+    defaultBudget: '₹50L+',
+    defaultGuests: '150–300',
+    icon: '🏰',
+    highlights: 'Guest Hospitality, Logistics Concierge, Themed Sunset Events, After-party',
+    presetBooked: ['Venue', 'Photography'],
+  },
+  {
+    id: 'marwari_gujarati',
+    name: 'Gujarati / Marwari Celebration',
+    tagline: 'Colorful Garba, Mameru & Grand Dining',
+    ceremonies: ['Mandap Muhurat', 'Mameru / Mosalu', 'Garba & Sangeet', 'Jaan Agaman & Pheras', 'Reception'],
+    defaultBudget: '₹25–50L',
+    defaultGuests: '300–500',
+    icon: '🥁',
+    highlights: 'Night-long Dandiya Raas, Lavish Live Food Counters, Rich Decor & Florals',
+    presetBooked: ['Venue'],
+  },
+  {
+    id: 'intimate_modern',
+    name: 'Intimate Modern Celebration',
+    tagline: 'Boutique Elegance & Meaningful Moments',
+    ceremonies: ['Cocktail Soiree', 'Intimate Ceremony', 'Celebration Dinner'],
+    defaultBudget: '₹15–25L',
+    defaultGuests: 'Under 150',
+    icon: '✨',
+    highlights: 'Curated 80-120 Guests, Gourmet Dining, Artisanal Decor & Cinematography',
+    presetBooked: [],
+  },
+]
 
 export const DEFAULT_WEDDING = {
   id: 'wed-001',
@@ -11,11 +67,21 @@ export const DEFAULT_WEDDING = {
   city: 'Jaipur',
   date: '18 Feb 2027',
   isoDate: '2027-02-18',
+  season: 'Winter 2026/27',
   days: 156,
   guests: '280 guests',
   guestCount: 280,
   budget: '₹24L budget',
   budgetAmount: 2400000,
+  budgetAllocations: {
+    venue: 720000,
+    catering: 600000,
+    decor: 400000,
+    photography: 250000,
+    apparel_makeup: 250000,
+    buffer: 180000,
+  },
+  templateId: 'north_indian',
   ceremonies: ['Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception'],
   onTrackScore: 82,
 }
@@ -251,6 +317,12 @@ export const DEFAULT_VENDORS = [
     phone: '+91 98290 12345',
     notes: 'Holding banquet + lawn for Feb 18. Token advance of 20% required.',
     relatedTaskId: 'venue',
+    inclusions: ['Grand Ballroom & Lawn (11 PM sound curfew waiver)', 'Dedicated bridal lounge', 'Valet parking for 120 cars', 'Generator backup'],
+    milestones: [
+      { id: 'm-ros-1', label: 'Token advance (20%)', amount: 108000, due: '2026-09-18', status: 'Pending' },
+      { id: 'm-ros-2', label: 'Mid-term lock (50%)', amount: 270000, due: '2026-12-15', status: 'Pending' },
+      { id: 'm-ros-3', label: 'Event check-in balance (30%)', amount: 162000, due: '2027-02-18', status: 'Pending' },
+    ],
   },
   {
     id: 'v-lenscraft',
@@ -267,6 +339,12 @@ export const DEFAULT_VENDORS = [
     phone: '+91 98111 88990',
     notes: 'Date hold expires 22 Sep. Includes drone cinematography and teaser reel.',
     relatedTaskId: 'photographer',
+    inclusions: ['2 Candid photographers', '2 Traditional videographers', 'Drone coverage for Sangeet & Baarat', '4K Teaser film (3 mins)'],
+    milestones: [
+      { id: 'm-len-1', label: 'Booking deposit (25%)', amount: 30000, due: '2026-09-22', status: 'Pending' },
+      { id: 'm-len-2', label: 'Wedding week payment (50%)', amount: 60000, due: '2027-02-10', status: 'Pending' },
+      { id: 'm-len-3', label: 'Album delivery settlement (25%)', amount: 30000, due: '2027-04-15', status: 'Pending' },
+    ],
   },
   {
     id: 'v-saffron',
@@ -283,6 +361,12 @@ export const DEFAULT_VENDORS = [
     phone: '+91 99200 44551',
     notes: 'Live Rajasthani + Awadhi stations. Tasting slotted for 6 guests.',
     relatedTaskId: 'tasting',
+    inclusions: ['6 live food counters', 'Chaat street setup', 'Artisanal mocktail bar', 'Custom dessert wall'],
+    milestones: [
+      { id: 'm-saf-1', label: 'Tasting & reservation advance (15%)', amount: 57000, due: '2026-10-05', status: 'Pending' },
+      { id: 'm-saf-2', label: 'Grocery procurement payment (65%)', amount: 247000, due: '2027-02-10', status: 'Pending' },
+      { id: 'm-saf-3', label: 'Post-reception balance (20%)', amount: 76000, due: '2027-02-19', status: 'Pending' },
+    ],
   },
   {
     id: 'v-mogra',
@@ -299,6 +383,12 @@ export const DEFAULT_VENDORS = [
     phone: '+91 98333 11229',
     notes: 'Awaiting venue layout blueprints from The Roseate before final quote.',
     relatedTaskId: 'decor',
+    inclusions: ['Mandap fresh marigold & tuberose styling', 'Fairy light canopy', 'Sangeet stage backdrop', 'Photo-booth floral arch'],
+    milestones: [
+      { id: 'm-mog-1', label: 'Design locking advance (30%)', amount: 75000, due: '2026-10-20', status: 'Pending' },
+      { id: 'm-mog-2', label: 'Fabrication advance (40%)', amount: 100000, due: '2027-01-20', status: 'Pending' },
+      { id: 'm-mog-3', label: 'Day-of balance (30%)', amount: 75000, due: '2027-02-18', status: 'Pending' },
+    ],
   },
   {
     id: 'v-royal-stays',
@@ -315,6 +405,12 @@ export const DEFAULT_VENDORS = [
     phone: '+91 98292 77711',
     notes: '40 room block quotation pending manager sign-off.',
     relatedTaskId: 'accommodation',
+    inclusions: ['25 Deluxe rooms + 15 Club suites', 'Complimentary buffet breakfast', 'Check-in welcome hampers counter', 'Early check-in support for Baraat'],
+    milestones: [
+      { id: 'm-roy-1', label: 'Room block booking deposit (25%)', amount: 100000, due: '2026-09-25', status: 'Pending' },
+      { id: 'm-roy-2', label: 'Room allocation confirmation (50%)', amount: 200000, due: '2026-12-20', status: 'Pending' },
+      { id: 'm-roy-3', label: 'Check-out settlement (25%)', amount: 100000, due: '2027-02-19', status: 'Pending' },
+    ],
   },
 ]
 
@@ -332,7 +428,7 @@ export const DEFAULT_NOTIFICATIONS = [
   {
     id: 'notif-2',
     title: 'Mom is waiting on hotel quote',
-    description: 'Royal Palace Suites sales manager has taken 48 hours. Consider a reminder.',
+    description: 'Royal Palace Suites sales manager has taken 48 hours. Consider a WhatsApp reminder.',
     type: 'waiting',
     timestamp: '5 hours ago',
     read: false,
@@ -372,40 +468,327 @@ export const DEFAULT_ACTIVITY = [
   },
 ]
 
+export const DEFAULT_GUESTS = [
+  {
+    id: 'g-1',
+    name: 'Rajinder Kapoor (Tauji & Taiji)',
+    side: 'bride', // 'bride' | 'groom' | 'mutual'
+    group: 'VIP Elders',
+    relation: 'Bride Paternal Uncle',
+    partySize: 4,
+    rsvpStatus: 'Confirmed', // 'Confirmed' | 'Tentative' | 'Declined' | 'Pending'
+    events: ['Mehendi', 'Haldi', 'Sangeet', 'Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: '101',
+    dietary: 'Pure Veg',
+    phone: '+91 98111 22334',
+    city: 'Amritsar',
+    notes: 'Require ground floor room close to elevator for Taiji.',
+  },
+  {
+    id: 'g-2',
+    name: 'Sunita & Vikram Malhotra (Masi & Masa)',
+    side: 'bride',
+    group: 'VIP Elders',
+    relation: 'Bride Maternal Aunt',
+    partySize: 3,
+    rsvpStatus: 'Confirmed',
+    events: ['Haldi', 'Sangeet', 'Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: '102',
+    dietary: 'Jain',
+    phone: '+91 98222 33445',
+    city: 'Mumbai',
+    notes: 'Strict Jain food without onion/garlic/root vegetables.',
+  },
+  {
+    id: 'g-3',
+    name: 'Harshvardhan Mehta (Chacha ji)',
+    side: 'groom',
+    group: 'VIP Elders',
+    relation: 'Groom Uncle & Baraat Lead',
+    partySize: 4,
+    rsvpStatus: 'Confirmed',
+    events: ['Sangeet', 'Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: '201',
+    dietary: 'No preference',
+    phone: '+91 98333 44556',
+    city: 'Jaipur',
+    notes: 'Leading Baraat vintage car and dhol coordination.',
+  },
+  {
+    id: 'g-4',
+    name: 'Ananya Sen & Gang',
+    side: 'bride',
+    group: 'Close Friends',
+    relation: 'Bride College Bestie / Bridesmaid',
+    partySize: 3,
+    rsvpStatus: 'Confirmed',
+    events: ['Mehendi', 'Sangeet', 'Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: '103',
+    dietary: 'No preference',
+    phone: '+91 98444 55667',
+    city: 'Bengaluru',
+    notes: 'In charge of bridesmaid entry choreography.',
+  },
+  {
+    id: 'g-5',
+    name: 'Kabir Singhania & Friends',
+    side: 'groom',
+    group: 'Close Friends',
+    relation: 'Groom Groomsman',
+    partySize: 4,
+    rsvpStatus: 'Confirmed',
+    events: ['Sangeet', 'Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: '202',
+    dietary: 'Non-Veg',
+    phone: '+91 98555 66778',
+    city: 'Delhi NCR',
+    notes: 'Need early check-in for Sangeet dance rehearsal.',
+  },
+  {
+    id: 'g-6',
+    name: 'Sanjay & Rekha Goel',
+    side: 'mutual',
+    group: 'Extended Relatives',
+    relation: 'Family Friends',
+    partySize: 2,
+    rsvpStatus: 'Tentative',
+    events: ['Wedding', 'Reception'],
+    stayRequired: false,
+    roomAssigned: null,
+    dietary: 'Pure Veg',
+    phone: '+91 98666 77889',
+    city: 'Delhi',
+    notes: 'Traveling by Shatabdi same-day morning.',
+  },
+  {
+    id: 'g-7',
+    name: 'Devika & Rohit Agarwal',
+    side: 'bride',
+    group: 'Extended Relatives',
+    relation: 'Bride Cousin',
+    partySize: 2,
+    rsvpStatus: 'Pending',
+    events: ['Sangeet', 'Wedding'],
+    stayRequired: true,
+    roomAssigned: null,
+    dietary: 'Jain',
+    phone: '+91 98777 88990',
+    city: 'Kolkata',
+    notes: 'Waiting for flight confirmation.',
+  },
+  {
+    id: 'g-8',
+    name: 'Col. K.S. Rathore & Family',
+    side: 'groom',
+    group: 'VIP Elders',
+    relation: 'Groom Grandfather’s Friend',
+    partySize: 3,
+    rsvpStatus: 'Pending',
+    events: ['Wedding', 'Reception'],
+    stayRequired: true,
+    roomAssigned: null,
+    dietary: 'No preference',
+    phone: '+91 98888 99001',
+    city: 'Jodhpur',
+    notes: 'Special seating requested near Mandap.',
+  },
+  {
+    id: 'g-9',
+    name: 'Priya & Rahul Sharma',
+    side: 'mutual',
+    group: 'Colleagues',
+    relation: 'Tech Colleague',
+    partySize: 2,
+    rsvpStatus: 'Declined',
+    events: ['Reception'],
+    stayRequired: false,
+    roomAssigned: null,
+    dietary: 'No preference',
+    phone: '+91 98999 00112',
+    city: 'London / Mumbai',
+    notes: 'Regretfully out of country; sending blessings & gift.',
+  },
+]
+
+export const DEFAULT_ROOMS = [
+  {
+    id: 'r-101',
+    roomNumber: '101',
+    type: 'Heritage Deluxe Suite',
+    capacity: 4,
+    wing: 'Bride Family Wing (East)',
+    assignedGuestIds: ['g-1'],
+    status: 'Occupied',
+    checkIn: '17 Feb 2027',
+    checkOut: '20 Feb 2027',
+  },
+  {
+    id: 'r-102',
+    roomNumber: '102',
+    type: 'Deluxe Courtyard King',
+    capacity: 3,
+    wing: 'Bride Family Wing (East)',
+    assignedGuestIds: ['g-2'],
+    status: 'Occupied',
+    checkIn: '17 Feb 2027',
+    checkOut: '19 Feb 2027',
+  },
+  {
+    id: 'r-103',
+    roomNumber: '103',
+    type: 'Twin Terrace Room',
+    capacity: 3,
+    wing: 'Bridesmaids Wing',
+    assignedGuestIds: ['g-4'],
+    status: 'Occupied',
+    checkIn: '17 Feb 2027',
+    checkOut: '19 Feb 2027',
+  },
+  {
+    id: 'r-104',
+    roomNumber: '104',
+    type: 'Deluxe Courtyard King',
+    capacity: 2,
+    wing: 'Bride Family Wing (East)',
+    assignedGuestIds: [],
+    status: 'Available',
+    checkIn: '17 Feb 2027',
+    checkOut: '19 Feb 2027',
+  },
+  {
+    id: 'r-201',
+    roomNumber: '201',
+    type: 'Royal Rajput Suite',
+    capacity: 4,
+    wing: 'Baraat VIP Wing (West)',
+    assignedGuestIds: ['g-3'],
+    status: 'Occupied',
+    checkIn: '18 Feb 2027',
+    checkOut: '20 Feb 2027',
+  },
+  {
+    id: 'r-202',
+    roomNumber: '202',
+    type: 'Twin Terrace Room',
+    capacity: 4,
+    wing: 'Groomsmen Wing',
+    assignedGuestIds: ['g-5'],
+    status: 'Occupied',
+    checkIn: '18 Feb 2027',
+    checkOut: '20 Feb 2027',
+  },
+  {
+    id: 'r-203',
+    roomNumber: '203',
+    type: 'Deluxe Courtyard King',
+    capacity: 2,
+    wing: 'Baraat VIP Wing (West)',
+    assignedGuestIds: [],
+    status: 'Available',
+    checkIn: '18 Feb 2027',
+    checkOut: '20 Feb 2027',
+  },
+  {
+    id: 'r-204',
+    roomNumber: '204',
+    type: 'Heritage Deluxe Suite',
+    capacity: 3,
+    wing: 'Baraat VIP Wing (West)',
+    assignedGuestIds: [],
+    status: 'Available',
+    checkIn: '18 Feb 2027',
+    checkOut: '20 Feb 2027',
+  },
+]
+
+export const DEFAULT_CONTINGENCY = {
+  gstRate: 18,
+  gstEnabled: true,
+  extraPlatesPct: 10,
+  plateCost: 2200,
+  alcoholCorkage: 65000,
+  soundPplLicense: 40000,
+  generatorDieselBackup: 35000,
+  shagunTipsReserve: 50000,
+}
+
 export function loadSavedState() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
       if (parsed && parsed.wedding && parsed.tasks && parsed.vendors) {
-        return parsed
+        return {
+          ...parsed,
+          guests: parsed.guests || DEFAULT_GUESTS,
+          rooms: parsed.rooms || DEFAULT_ROOMS,
+          contingency: parsed.contingency || DEFAULT_CONTINGENCY,
+        }
       }
     }
   } catch (e) {
-    console.warn('Could not read saved wedding state, using defaults:', e)
+    console.warn('Could not read saved wedding state, checking secondary backup:', e)
+    try {
+      const backup = localStorage.getItem(BACKUP_STORAGE_KEY)
+      if (backup) {
+        const parsed = JSON.parse(backup)
+        return {
+          ...parsed,
+          guests: parsed.guests || DEFAULT_GUESTS,
+          rooms: parsed.rooms || DEFAULT_ROOMS,
+          contingency: parsed.contingency || DEFAULT_CONTINGENCY,
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
   }
   return {
     wedding: DEFAULT_WEDDING,
     tasks: DEFAULT_TASKS,
     vendors: DEFAULT_VENDORS,
     people: DEFAULT_PEOPLE,
+    guests: DEFAULT_GUESTS,
+    rooms: DEFAULT_ROOMS,
+    contingency: DEFAULT_CONTINGENCY,
     notifications: DEFAULT_NOTIFICATIONS,
     activityLog: DEFAULT_ACTIVITY,
     activeRole: 'owner', // 'owner' | 'co_owner' | 'family_lead' | 'coordinator'
   }
 }
 
+
 export function saveState(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    const serialized = JSON.stringify(state)
+    localStorage.setItem(STORAGE_KEY, serialized)
+    // Double-buffered backup to protect user against tab crash/corruption
+    localStorage.setItem(BACKUP_STORAGE_KEY, serialized)
   } catch (e) {
     console.error('Failed to persist wedding state:', e)
   }
 }
 
+export function exportStateAsJSON(state) {
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(state, null, 2))
+  const downloadAnchor = document.createElement('a')
+  const coupleSlug = (state.wedding?.couple || 'wedding').toLowerCase().replace(/[^a-z0-9]/g, '_')
+  downloadAnchor.setAttribute('href', dataStr)
+  downloadAnchor.setAttribute('download', `shaadios_backup_${coupleSlug}_${new Date().toISOString().slice(0, 10)}.json`)
+  document.body.appendChild(downloadAnchor)
+  downloadAnchor.click()
+  downloadAnchor.remove()
+}
+
 export function resetState() {
   try {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(BACKUP_STORAGE_KEY)
   } catch (e) {
     // ignore
   }
@@ -414,6 +797,9 @@ export function resetState() {
     tasks: DEFAULT_TASKS,
     vendors: DEFAULT_VENDORS,
     people: DEFAULT_PEOPLE,
+    guests: DEFAULT_GUESTS,
+    rooms: DEFAULT_ROOMS,
+    contingency: DEFAULT_CONTINGENCY,
     notifications: DEFAULT_NOTIFICATIONS,
     activityLog: [
       {
@@ -427,3 +813,4 @@ export function resetState() {
     activeRole: 'owner',
   }
 }
+

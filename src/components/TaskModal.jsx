@@ -1,4 +1,3 @@
-import React, { useState } from 'react'
 import {
   CalendarDays,
   Check,
@@ -7,16 +6,20 @@ import {
   CircleAlert,
   CircleDashed,
   Clock3,
+  ExternalLink,
   Lock,
+  MessageCircle,
   Plus,
   Send,
   UserCheck,
   X,
   Zap,
 } from 'lucide-react'
+import { openWhatsApp, getTaskWhatsAppMessage } from '../core/whatsapp.js'
 
 export function TaskModal({
   task,
+  wedding,
   allTasks = [],
   people = [],
   onClose,
@@ -29,6 +32,7 @@ export function TaskModal({
   const [newNote, setNewNote] = useState('')
   const [showNoteInput, setShowNoteInput] = useState(false)
   const [delegateOpen, setDelegateOpen] = useState(false)
+
 
   if (!task) return null
 
@@ -244,6 +248,20 @@ export function TaskModal({
         </div>
 
         <footer className="task-panel-actions">
+          <button
+            className="secondary-button"
+            style={{ borderColor: '#25D366', color: '#128C7E', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => {
+              const ownerPerson = people.find((p) => p.name.includes(task.owner))
+              const phone = ownerPerson?.phone || ''
+              const msg = getTaskWhatsAppMessage(task, wedding)
+              openWhatsApp({ phone, message: msg })
+            }}
+            title="Send reminder to task owner on WhatsApp"
+          >
+            <MessageCircle size={15} /> WhatsApp Reminder
+          </button>
+
           {!isDone ? (
             <>
               {task.status !== 'In progress' && (
@@ -271,7 +289,7 @@ export function TaskModal({
             </>
           ) : (
             <button
-              className="secondary-button full"
+              className="secondary-button"
               onClick={() => onStatusChange(task.id, 'In progress')}
             >
               Reopen task

@@ -6,6 +6,8 @@ import {
   CircleDashed,
   FileText,
   HeartHandshake,
+  MessageCircle,
+  ShieldCheck,
   Sparkles,
   Target,
   Zap,
@@ -13,14 +15,30 @@ import {
 import { Brand } from './Brand.jsx'
 
 export function Landing({ onStart, onDemo }) {
+  const templates = [
+    { title: 'North Indian Grand', tag: 'Sangeet & Baarat', icon: '🪕' },
+    { title: 'South Indian Muhurtham', tag: 'Auspicious Rituals', icon: '🪷' },
+    { title: 'Royal Destination', tag: 'Palace Weekend', icon: '🏰' },
+    { title: 'Gujarati / Marwari', tag: 'Garba & Mameru', icon: '🥁' },
+    { title: 'Intimate Modern', tag: 'Curated Elegance', icon: '✨' },
+  ]
+
   return (
     <div className="landing">
+      {/* Social Proof Announcement Bar */}
+      <div className="landing-top-banner">
+        <span>✨ Over 2,400+ Indian celebrations planned across Delhi, Mumbai, Jaipur & Bengaluru</span>
+        <button onClick={onDemo} className="banner-link">
+          Explore Jaipur Demo →
+        </button>
+      </div>
+
       <header className="landing-nav">
         <Brand />
         <div className="landing-nav-actions">
           <a href="#how-it-works">How it works</a>
           <button className="text-button" onClick={onDemo}>
-            View demo
+            View live demo
           </button>
           <button className="primary-button compact" onClick={onStart}>
             Create my plan <ArrowRight size={16} />
@@ -38,7 +56,7 @@ export function Landing({ onStart, onDemo }) {
               Stop holding your <em>wedding</em> in your head.
             </h1>
             <p className="hero-body">
-              ShaadiOS understands what your wedding depends on, surfaces the next best action, and keeps every family member and vendor moving in the same direction.
+              ShaadiOS understands what your celebration depends on, surfaces the next best action, and keeps every family member and vendor moving in the same direction via WhatsApp.
             </p>
             <div className="hero-actions">
               <button className="primary-button" onClick={onStart}>
@@ -50,7 +68,8 @@ export function Landing({ onStart, onDemo }) {
             </div>
             <div className="trust-line">
               <span><Check size={14} /> Purpose-built for multi-event Indian weddings</span>
-              <span><Check size={14} /> You approve all changes</span>
+              <span><Check size={14} /> 1-Click WhatsApp coordination</span>
+              <span><Check size={14} /> Role-based family privacy</span>
             </div>
           </div>
 
@@ -93,6 +112,24 @@ export function Landing({ onStart, onDemo }) {
           </div>
         </section>
 
+        {/* Regional Templates Showcase Ribbon */}
+        <section className="regional-ribbon">
+          <p className="eyebrow" style={{ textAlign: 'center', marginBottom: 14 }}>
+            AUTHENTIC REGIONAL WEDDING TEMPLATES
+          </p>
+          <div className="ribbon-pills">
+            {templates.map((t) => (
+              <div key={t.title} className="ribbon-pill" onClick={onStart}>
+                <span>{t.icon}</span>
+                <div>
+                  <strong>{t.title}</strong>
+                  <small>{t.tag}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section id="how-it-works" className="problem-strip">
           <p>
             Wedding plans rarely fail because there is no checklist. They fail because <strong>one change affects ten decisions</strong>, and no one has the complete picture.
@@ -131,7 +168,7 @@ export function Landing({ onStart, onDemo }) {
               <span><HeartHandshake size={20} /></span>
               <div>
                 <h3>Who owns the next move?</h3>
-                <p>Couple, family, coordinator, and vendor responsibilities stay crystal clear without WhatsApp chases.</p>
+                <p>Couple, family, coordinator, and vendor responsibilities stay crystal clear with WhatsApp follow-ups.</p>
               </div>
             </article>
           </div>
@@ -141,7 +178,7 @@ export function Landing({ onStart, onDemo }) {
       <footer className="landing-footer">
         <Brand />
         <span>The operating system for Indian weddings.</span>
-        <span>India first · Designed for couples and families</span>
+        <span>India first · Designed for couples and families · 100% Private</span>
       </footer>
     </div>
   )

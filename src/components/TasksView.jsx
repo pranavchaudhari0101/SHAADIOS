@@ -6,12 +6,15 @@ import {
   Clock3,
   Filter,
   Lock,
+  MessageCircle,
   Plus,
 } from 'lucide-react'
+import { openWhatsApp, getTaskWhatsAppMessage } from '../core/whatsapp.js'
 
 export function TasksView({
   tasks = [],
   people = [],
+  wedding,
   onTask,
   onOpenAddTask,
   activeRole = 'owner',
@@ -60,7 +63,7 @@ export function TasksView({
     <div className="page">
       <div className="page-intro compact-intro">
         <div>
-          <p className="eyebrow">OWNERSHIP AND FOLLOW THROUGH</p>
+          <p className="eyebrow">OWNERSHIP, DEPENDENCIES & WHATSAPP</p>
           <h1>Tasks</h1>
           <p className="subtitle">
             Every task connects to a clear owner, a clear reason, and prerequisite dependencies.
@@ -142,10 +145,13 @@ export function TasksView({
                 const isBlocked = task.status === 'Blocked'
 
                 return (
-                  <button
+                  <div
                     className={`task-list-row ${isBlocked ? 'is-blocked-row' : ''}`}
                     onClick={() => onTask(task)}
                     key={task.id}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && onTask(task)}
                   >
                     <span
                       className={`task-state ${task.status.toLowerCase().replace(' ', '-')}`}
@@ -167,8 +173,27 @@ export function TasksView({
                       {task.owner}
                     </span>
                     <span className="task-list-date">{task.due}</span>
+
+                    {/* WhatsApp Quick Nudge */}
+                    {!isDone && (
+                      <button
+                        type="button"
+                        className="task-wa-nudge-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const ownerPerson = people.find((p) => p.name.includes(task.owner))
+                          const phone = ownerPerson?.phone || ''
+                          const msg = getTaskWhatsAppMessage(task, wedding)
+                          openWhatsApp({ phone, message: msg })
+                        }}
+                        title={`Send reminder to ${task.owner} via WhatsApp`}
+                      >
+                        <MessageCircle size={14} />
+                      </button>
+                    )}
+
                     <ChevronRight size={17} />
-                  </button>
+                  </div>
                 )
               })}
             </section>
