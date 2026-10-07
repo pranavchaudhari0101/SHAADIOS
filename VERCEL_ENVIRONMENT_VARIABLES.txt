@@ -1,0 +1,81 @@
+================================================================================
+   SHAADIOSS BACKEND - VERCEL ENVIRONMENT VARIABLES TO COPY
+================================================================================
+
+Paste these in your Vercel Dashboard → Settings → Environment Variables
+
+================================================================================
+DATABASE
+================================================================================
+DATABASE_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+DIRECT_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+================================================================================
+AUTHENTICATION
+================================================================================
+JWT_SECRET=ShaadiOS2026ProductionSecretKey!@#$RandomString32Chars
+JWT_EXPIRES_IN=7d
+BCRYPT_ROUNDS=12
+
+================================================================================
+APPLICATION
+================================================================================
+NODE_ENV=production
+PORT=3001
+FRONTEND_URL=https://your-frontend-url.vercel.app
+CORS_ORIGIN=https://your-frontend-url.vercel.app
+
+Rate Limiting:
+RATE_LIMIT_MAX=100
+RATE_LIMIT_WINDOW_MS=900000
+
+================================================================================
+THIRD-PARTY SERVICES (Optional - Add later)
+================================================================================
+# WhatsApp Business API (Twilio)
+TWILIO_ACCOUNT_SID=ACxxx
+TWILIO_AUTH_TOKEN=xxx
+TWILIO_PHONE_NUMBER=+14155238886
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+
+# Payment Gateway (Razorpay)
+RAZORPAY_KEY_ID=rzp_test_xxx
+RAZORPAY_KEY_SECRET=xxx
+RAZORPAY_WEBHOOK_SECRET=xxx
+
+# Email Service (Resend)
+RESEND_API_KEY=re_xxx
+EMAIL_FROM=ShaadiOS <noreply@shaadios.com>
+
+# File Storage (AWS S3)
+AWS_ACCESS_KEY_ID=AKIAxxx
+AWS_SECRET_ACCESS_KEY=xxx
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=shaadios-uploads
+
+================================================================================
+REDIS (Optional - For caching)
+================================================================================
+REDIS_URL=redis://localhost:6379
+
+================================================================================
+IMPORTANT NOTES:
+================================================================================
+1. Replace https://your-frontend-url.vercel.app with your actual frontend URL
+2. Generate a new JWT_SECRET - use a 32+ character random string
+3. Add your actual API keys for WhatsApp, Payments, Email, and File Storage later
+4. All environment variables should be marked as "Production", "Preview", and "Development"
+5. After adding variables, redeploy your Vercel project
+6. Run database migrations after deployment: npx prisma migrate deploy
+
+================================================================================
+YOUR NEON DATABASE CONNECTION INFO:
+================================================================================
+Endpoint: ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech
+Database: neondb
+Region: US East (Ohio)
+Status: Active
+Free Tier: 0.5GB storage, 100 hours compute/month
+
+================================================================================
