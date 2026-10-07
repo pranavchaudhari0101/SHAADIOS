@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && pnpm install && pnpm build",
+  "buildCommand": "pnpm install && pnpm build",
   "devCommand": "vite",
   "installCommand": "pnpm install",
   "framework": "vite",
