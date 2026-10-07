@@ -10,9 +10,9 @@ You need to deploy **TWO SEPARATE Vercel projects**:
 
 ### Environment Variables (Vercel Dashboard → Settings → Environment Variables):
 ```
-DATABASE_URL=postgresql://neondb_owner:npg_pqI10skZiEPC@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-DIRECT_URL=postgresql://neondb_owner:npg_pqI10skZiEPC@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
-JWT_SECRET=ShaadiOS2026ProductionSecretKey!@#$RandomString32Chars
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST.neon.tech/neondb?sslmode=require&channel_binding=require
+DIRECT_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST.neon.tech/neondb?sslmode=require
+JWT_SECRET=GENERATE_A_NEW_32CHAR_RANDOM_SECRET
 JWT_EXPIRES_IN=7d
 BCRYPT_ROUNDS=12
 NODE_ENV=production

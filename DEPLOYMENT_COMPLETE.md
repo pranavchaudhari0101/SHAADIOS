@@ -19,7 +19,7 @@ Your backend is fully set up and ready to use!
 ```
 Database: neondb
 Region: us-east-2 (Ohio)
-Endpoint: ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech
+Endpoint: YOUR_NEON_HOST.neon.tech
 ```
 
 **Tables Created:**
@@ -128,9 +128,9 @@ console.log(weddings)
 Your `.env` file is configured with:
 
 ```env
-DATABASE_URL=postgresql://neondb_owner:...@ep-tiny-dew...neon.tech/neondb
-DIRECT_URL=postgresql://neondb_owner:...@ep-tiny-dew...neon.tech/neondb
-JWT_SECRET=ShaadiOS2026ProductionSecretKey!
+DATABASE_URL=postgresql://neondb_owner:...@YOUR_NEON_HOST.neon.tech/neondb
+DIRECT_URL=postgresql://neondb_owner:...@YOUR_NEON_HOST.neon.tech/neondb
+JWT_SECRET=GENERATE_A_NEW_32CHAR_RANDOM_SECRET
 NODE_ENV=development
 PORT=3001
 FRONTEND_URL=http://localhost:5173

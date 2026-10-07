@@ -53,11 +53,11 @@ git push -u origin main
 Copy and paste these in Vercel dashboard:
 
 ```env
-DATABASE_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require&channel_binding=require
 
-DIRECT_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
+DIRECT_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require
 
-JWT_SECRET=ShaadiOS2026ProductionSecretKey!@#$RandomString32Chars
+JWT_SECRET=GENERATE_A_NEW_32CHAR_RANDOM_SECRET
 
 JWT_EXPIRES_IN=7d
 
@@ -107,9 +107,9 @@ curl https://shaadios-backend.vercel.app/health
 ## 🔑 Vercel Environment Variables (Copy Below)
 
 ```
-DATABASE_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-DIRECT_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
-JWT_SECRET=ShaadiOS2026ProductionSecretKey!@#$RandomString32Chars
+DATABASE_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require&channel_binding=require
+DIRECT_URL=postgresql://neondb_owner:YOUR_NEON_PASSWORD@YOUR_NEON_HOST/neondb?sslmode=require
+JWT_SECRET=GENERATE_A_NEW_32CHAR_RANDOM_SECRET
 JWT_EXPIRES_IN=7d
 BCRYPT_ROUNDS=12
 NODE_ENV=production

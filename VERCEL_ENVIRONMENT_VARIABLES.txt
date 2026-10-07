@@ -7,13 +7,13 @@ Paste these in your Vercel Dashboard → Settings → Environment Variables
 ================================================================================
 DATABASE
 ================================================================================
-DATABASE_URL="postgresql://neondb_owner:npg_placeholder@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-DIRECT_URL="postgresql://neondb_owner:npg_placeholder@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://neondb_owner:npg_placeholder@YOUR_NEON_HOST.neon.tech/neondb?sslmode=require&channel_binding=require"
+DIRECT_URL="postgresql://neondb_owner:npg_placeholder@YOUR_NEON_HOST.neon.tech/neondb?sslmode=require"
 
 ================================================================================
 AUTHENTICATION
 ================================================================================
-JWT_SECRET=ShaadiOS2026ProductionSecretKey!@#$RandomString32Chars
+JWT_SECRET=GENERATE_A_NEW_32CHAR_RANDOM_SECRET
 JWT_EXPIRES_IN=7d
 BCRYPT_ROUNDS=12
 
@@ -71,7 +71,7 @@ IMPORTANT NOTES:
 ================================================================================
 YOUR NEON DATABASE CONNECTION INFO:
 ================================================================================
-Endpoint: ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech
+Endpoint: YOUR_NEON_HOST.neon.tech
 Database: neondb
 Region: US East (Ohio)
 Status: Active

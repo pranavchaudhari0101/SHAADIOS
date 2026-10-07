@@ -1,6 +1,12 @@
 # Logs
 logs
 *.log
+
+# Environment files — secrets never get committed
+.env
+.env.*
+*.pem
+*.key
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
