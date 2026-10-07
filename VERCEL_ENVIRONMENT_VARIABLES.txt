@@ -7,9 +7,8 @@ Paste these in your Vercel Dashboard → Settings → Environment Variables
 ================================================================================
 DATABASE
 ================================================================================
-DATABASE_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-
-DIRECT_URL=postgresql://neondb_owner:npg_3jcfnTWhgm8i@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL="postgresql://neondb_owner:npg_placeholder@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+DIRECT_URL="postgresql://neondb_owner:npg_placeholder@ep-tiny-dew-b5futi81-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
 ================================================================================
 AUTHENTICATION
