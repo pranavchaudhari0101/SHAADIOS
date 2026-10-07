@@ -1,0 +1,440 @@
+// Prisma schema optimized for Neon serverless PostgreSQL
+// Neon provides serverless Postgres with auto-scaling and branching
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // For migrations in Neon
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  fullName      String   @map("full_name")
+  phone         String?
+  avatarUrl     String?  @map("avatar_url")
+  role          UserRole @default(USER)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ownedWeddings Wedding[]        @relation("WeddingOwner")
+  collaborations WeddingCollaborator[]
+  tasks         Task[]           @relation("TaskOwner")
+  notifications Notification[]
+  activityLog   ActivityLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// ============================================
+// WEDDING CORE
+// ============================================
+
+model Wedding {
+  id            String   @id @default(uuid())
+  ownerId       String   @map("owner_id")
+  owner         User     @relation("WeddingOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  // Partner Details
+  partner1Name  String   @map("partner1_name")
+  partner2Name  String   @map("partner2_name")
+  couple        String   // Display name "Rhea & Arjun"
+  
+  // Wedding Details
+  city          String
+  date          DateTime @map("wedding_date")
+  isoDate       String   @map("iso_date") // "2027-02-18"
+  season        String?
+  guestCount    Int      @default(300) @map("guest_count")
+  budgetAmount  Decimal  @db.Decimal(12, 2) @default(0) @map("budget_amount")
+  templateId    String   @map("template_id") @db.VarChar(50)
+  ceremonies    Json     // ["Mehendi", "Haldi", "Sangeet", "Wedding", "Reception"]
+  
+  // Status
+  status        WeddingStatus @default(PLANNING)
+  onTrackScore  Int           @default(80) @map("on_track_score")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  collaborators WeddingCollaborator[]
+  tasks         Task[]
+  vendors       Vendor[]
+  guests        Guest[]
+  rooms         Room[]
+  notifications Notification[]
+  activityLog   ActivityLog[]
+  contingency   Contingency?
+  
+  @@map("weddings")
+}
+
+enum WeddingStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// COLLABORATORS
+// ============================================
+
+model WeddingCollaborator {
+  id         String           @id @default(uuid())
+  weddingId  String           @map("wedding_id")
+  wedding    Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  userId     String           @map("user_id")
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       CollaboratorRole @default(VIEWER)
+  invitedBy  String?          @map("invited_by")
+  invitedAt  DateTime?        @map("invited_at")
+  acceptedAt DateTime?        @map("accepted_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@unique([weddingId, userId])
+  @@map("wedding_collaborators")
+}
+
+enum CollaboratorRole {
+  OWNER       // Full access, can delete wedding
+  CO_OWNER    // Full access, cannot delete
+  FAMILY_LEAD // Limited to assigned tasks
+  COORDINATOR // Operational access only
+  VIEWER      // Read-only access
+}
+
+// ============================================
+// TASKS
+// ============================================
+
+model Task {
+  id           String     @id @default(uuid())
+  weddingId    String     @map("wedding_id")
+  wedding      Wedding    @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  
+  // Task Details
+  title        String
+  description  String?
+  category     String     @db.VarChar(50)
+  ceremony     String?    @db.VarChar(50)
+  
+  // Ownership
+  ownerId      String?    @map("owner_id")
+  owner        User?      @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerRole    String?    @map("owner_role") @db.VarChar(50)
+  
+  // Dates & Status
+  dueDate      DateTime?  @map("due_date")
+  dueIsoDate   String?    @map("due_iso_date")
+  status       TaskStatus @default(NOT_STARTED)
+  priority     TaskPriority @default(UPCOMING)
+  
+  // Dependencies
+  dependsOn    String[]   @map("depends_on") // Array of Task IDs
+  blocks       String[]   // Array of Task IDs
+  
+  // Notes (stored as JSON array)
+  notes        Json?
+  
+  // Timestamps
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  completedAt  DateTime?  @map("completed_at")
+
+  @@map("tasks")
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  WAITING
+  BLOCKED
+  DONE
+}
+
+enum TaskPriority {
+  CRITICAL
+  IMPORTANT
+  UPCOMING
+  WAITING
+  BLOCKED
+  DONE
+}
+
+// ============================================
+// VENDORS
+// ============================================
+
+model Vendor {
+  id              String       @id @default(uuid())
+  weddingId       String       @map("wedding_id")
+  wedding         Wedding      @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  
+  // Vendor Details
+  name            String
+  category        String       @db.VarChar(50)
+  state           VendorState  @default(DISCOVERED)
+  
+  // Contact
+  contactPerson   String?      @map("contact_person")
+  phone           String?
+  email           String?
+  website         String?
+  
+  // Financial
+  amount          Decimal      @db.Decimal(12, 2) @default(0)
+  currency        String       @default("INR")
+  
+  // Tracking
+  holdDeadline    DateTime?    @map("hold_deadline")
+  relatedTaskId   String?      @map("related_task_id")
+  
+  // Details
+  inclusions      Json?        // Array of strings
+  milestones      Json?        // Array of milestone objects
+  notes           String?      @db.Text
+  
+  // Timestamps
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  confirmedAt     DateTime?    @map("confirmed_at")
+
+  @@map("vendors")
+}
+
+enum VendorState {
+  DISCOVERED
+  SHORTLISTED
+  CONTACTED
+  QUOTE_RECEIVED
+  SELECTED
+  CONTRACT_PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// ============================================
+// GUESTS
+// ============================================
+
+model Guest {
+  id            String      @id @default(uuid())
+  weddingId     String      @map("wedding_id")
+  wedding       Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  
+  // Guest Details
+  name          String
+  side          GuestSide   @default(MUTUAL)
+  groupName     String?     @map("group_name") @db.VarChar(50)
+  relation      String?
+  partySize     Int         @default(1) @map("party_size")
+  
+  // Contact
+  phone         String?
+  email         String?
+  city          String?
+  
+  // RSVP
+  rsvpStatus    RsvpStatus  @default(PENDING) @map("rsvp_status")
+  events        Json?       // ["Mehendi", "Sangeet", "Wedding"]
+  
+  // Accommodation
+  stayRequired  Boolean     @default(false) @map("stay_required")
+  roomAssigned  String?     @map("room_assigned")
+  
+  // Preferences
+  dietary       String?
+  notes         String?     @db.Text
+  
+  // Timestamps
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("guests")
+}
+
+enum GuestSide {
+  BRIDE
+  GROOM
+  MUTUAL
+}
+
+enum RsvpStatus {
+  CONFIRMED
+  TENTATIVE
+  DECLINED
+  PENDING
+}
+
+// ============================================
+// ROOMS
+// ============================================
+
+model Room {
+  id                  String     @id @default(uuid())
+  weddingId           String     @map("wedding_id")
+  wedding             Wedding    @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  
+  // Room Details
+  roomNumber          String     @map("room_number")
+  type                String     @map("room_type") @db.VarChar(50)
+  capacity            Int        @default(2)
+  wing                String?
+  
+  // Assignment
+  assignedGuestIds    String[]   @map("assigned_guest_ids") @default([])
+  status              RoomStatus @default(AVAILABLE)
+  
+  // Dates
+  checkIn             DateTime?  @map("check_in")
+  checkOut            DateTime?  @map("check_out")
+  
+  // Timestamps
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  @@map("rooms")
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String           @id @default(uuid())
+  weddingId   String           @map("wedding_id")
+  wedding     Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  userId      String?          @map("user_id")
+  user        User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Notification Details
+  title       String
+  description String           @db.Text
+  type        NotificationType
+  
+  // Targeting
+  targetRole  String?          @map("target_role") @db.VarChar(50)
+  taskId      String?          @map("task_id")
+  
+  // Status
+  read        Boolean          @default(false)
+  readAt      DateTime?        @map("read_at")
+  
+  // Timestamps
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  CRITICAL
+  ACTION
+  WAITING
+  UPDATE
+  REMINDER
+}
+
+// ============================================
+// ACTIVITY LOG
+// ============================================
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  weddingId   String   @map("wedding_id")
+  wedding     Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  userId      String?  @map("user_id")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Activity Details
+  action      String   @db.Text
+  metadata    Json?
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("activity_log")
+}
+
+// ============================================
+// CONTINGENCY & BUDGET
+// ============================================
+
+model Contingency {
+  id                    String   @id @default(uuid())
+  weddingId             String   @unique @map("wedding_id")
+  wedding               Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  
+  // GST & Taxes
+  gstRate               Decimal  @db.Decimal(5, 2) @default(18) @map("gst_rate")
+  gstEnabled            Boolean  @default(true) @map("gst_enabled")
+  
+  // Hidden Costs
+  extraPlatesPct        Decimal  @db.Decimal(5, 2) @default(10) @map("extra_plates_pct")
+  plateCost             Decimal  @db.Decimal(10, 2) @default(2200) @map("plate_cost")
+  alcoholCorkage        Decimal  @db.Decimal(10, 2) @default(65000) @map("alcohol_corkage")
+  soundPplLicense       Decimal  @db.Decimal(10, 2) @default(40000) @map("sound_ppl_license")
+  generatorDieselBackup Decimal  @db.Decimal(10, 2) @default(35000) @map("generator_diesel_backup")
+  shagunTipsReserve     Decimal  @db.Decimal(10, 2) @default(50000) @map("shagun_tips_reserve")
+  
+  // Timestamps
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("contingency")
+}
+
+// ============================================
+// PASSWORD RESET TOKENS
+// ============================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// EMAIL VERIFICATION TOKENS
+// ============================================
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("email_verification_tokens")
+}
