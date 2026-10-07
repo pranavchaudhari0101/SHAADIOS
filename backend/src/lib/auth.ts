@@ -4,8 +4,8 @@ import { prisma } from './prisma.js'
 import type { User } from '@prisma/client'
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12')
-const JWT_SECRET = process.env.JWT_SECRET || 'default-jwt-secret-change-in-production'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret-change-in-production'
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '7d'
 
 // ============================================
 // PASSWORD HASHING
