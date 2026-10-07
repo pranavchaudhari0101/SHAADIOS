@@ -1,8 +1,10 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "vite",
-  "outputDirectory": "dist",
+  "version": 2,
+  "buildCommand": "cd backend && npm run build",
+  "devCommand": "npm run dev",
   "installCommand": "npm install",
+  "framework": "vite",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/(.*)",

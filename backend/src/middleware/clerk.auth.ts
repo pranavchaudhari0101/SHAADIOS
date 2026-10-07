@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
-import { clerkClient, auth } from '@clerk/backend'
+import { createClerkClient, verifyToken } from '@clerk/backend'
 import { PrismaClient } from '@prisma/client'
 
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY
+})
 const prisma = new PrismaClient()
 
 // Extend Express Request type
@@ -44,7 +47,8 @@ export async function clerkAuthMiddleware(
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
     
     // Verify token with Clerk
-    const { userId, sessionClaims } = await clerkClient.tokens.verifyToken(token, {
+    const { sub: userId, sessionClaims } = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
       authorizedParties: ['http://localhost:3001', 'https://shaadios-backend.vercel.app']
     })
     
@@ -62,8 +66,8 @@ export async function clerkAuthMiddleware(
     req.clerkUser = {
       id: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
-      firstName: clerkUser.firstName,
-      lastName: clerkUser.lastName,
+      firstName: clerkUser.firstName || undefined,
+      lastName: clerkUser.lastName || undefined,
       imageUrl: clerkUser.imageUrl,
       publicMetadata: clerkUser.publicMetadata
     }
@@ -133,7 +137,8 @@ export async function requireClerkAuth(
     
     const token = authHeader.substring(7)
     
-    const { userId } = await clerkClient.tokens.verifyToken(token, {
+    const { sub: userId } = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
       authorizedParties: ['http://localhost:3001', 'https://shaadios-backend.vercel.app']
     })
     
@@ -150,8 +155,8 @@ export async function requireClerkAuth(
     req.clerkUser = {
       id: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
-      firstName: clerkUser.firstName,
-      lastName: clerkUser.lastName,
+      firstName: clerkUser.firstName || undefined,
+      lastName: clerkUser.lastName || undefined,
       imageUrl: clerkUser.imageUrl,
       publicMetadata: clerkUser.publicMetadata
     }
